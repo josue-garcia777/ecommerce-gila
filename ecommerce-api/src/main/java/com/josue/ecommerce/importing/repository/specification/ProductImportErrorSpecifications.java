@@ -10,6 +10,7 @@ public final class ProductImportErrorSpecifications {
     }
 
     public static Specification<ProductImportError> forImport(UUID importId) {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("importId"), importId);
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("productImport").get("id"), importId);
     }
 }

@@ -49,23 +49,23 @@ public class ProductController {
 
     @PostMapping("/products")
     ResponseEntity<ProductResponse> create(@Valid @RequestBody CreateProduct request) {
-        ProductResponse response = productService.create(request);
+        ProductResponse response = productService.createProduct(request);
         return ResponseEntity.created(URI.create("/api/v1/products/" + response.id())).body(response);
     }
 
     @GetMapping("/products/{productId}")
     ProductResponse get(@PathVariable UUID productId) {
-        return productService.get(productId);
+        return productService.getProduct(productId);
     }
 
     @PutMapping("/products/{productId}")
     ProductResponse update(@PathVariable UUID productId, @Valid @RequestBody UpdateProduct request) {
-        return productService.update(productId, request);
+        return productService.updateProduct(productId, request);
     }
 
     @DeleteMapping("/products/{productId}")
     ResponseEntity<Void> delete(@PathVariable UUID productId) {
-        productService.delete(productId);
+        productService.deleteProduct(productId);
         return ResponseEntity.noContent().build();
     }
 

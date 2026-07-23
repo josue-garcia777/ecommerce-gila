@@ -1,8 +1,10 @@
-package com.josue.ecommerce.order.controller;
+package com.josue.ecommerce.cart.controller;
 
 import com.josue.ecommerce.order.dto.OrderResponse;
 import com.josue.ecommerce.cart.service.CheckoutService;
+
 import java.util.UUID;
+
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;

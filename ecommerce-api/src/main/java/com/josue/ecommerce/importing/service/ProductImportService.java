@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 public interface ProductImportService {
-    @Transactional
     ImportWorkItem findImportItem(UUID importId);
+
     ImportStatusResponse getImportStatus(UUID importId);
 }

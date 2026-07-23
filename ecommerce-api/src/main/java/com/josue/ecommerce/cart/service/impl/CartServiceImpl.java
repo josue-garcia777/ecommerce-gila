@@ -7,7 +7,6 @@ import com.josue.ecommerce.cart.dto.CartResponse;
 import com.josue.ecommerce.cart.mapper.CartMapper;
 import com.josue.ecommerce.cart.repository.CartItemRepository;
 import com.josue.ecommerce.cart.repository.CartRepository;
-import com.josue.ecommerce.cart.repository.specification.CartItemSpecifications;
 import com.josue.ecommerce.cart.repository.specification.CartSpecifications;
 import com.josue.ecommerce.cart.service.CartService;
 import com.josue.ecommerce.identity.CurrentUserProvider;
@@ -24,6 +23,7 @@ import com.josue.ecommerce.shared.error.BadRequestException;
 import com.josue.ecommerce.shared.error.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +37,8 @@ public class CartServiceImpl implements CartService {
     private final CartMapper cartMapper;
 
     public CartServiceImpl(CartRepository cartRepository, CartItemRepository cartItemRepository,
-                           ProductQueryService productQueryService, CurrentUserProvider currentUserProvider,
+                           ProductQueryService productQueryService,
+                           CurrentUserProvider currentUserProvider,
                            CartMapper cartMapper) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
@@ -51,10 +52,9 @@ public class CartServiceImpl implements CartService {
         UUID userId = currentUserProvider.demoPrincipalUserId();
 
         Cart cart = cartRepository.findBy(
-                        CartSpecifications.activeForUser(userId),
+                        CartSpecifications.activeForUser(userId).and(CartSpecifications.fetchItems()),
                         query -> query.sortBy(Sort.by(Sort.Direction.DESC, "createdAt")).first())
-
-                .orElseGet(() -> cartRepository.save(new Cart(UUID.randomUUID(), userId, Instant.now())));
+                .orElseGet(() -> cartRepository.save(new Cart(userId, Instant.now())));
 
         return buildCartResponse(cart);
     }
@@ -75,12 +75,10 @@ public class CartServiceImpl implements CartService {
                     "The product is unavailable and cannot be added to a cart");
         }
 
-        cartItemRepository.findOne(CartItemSpecifications.forCartAndProduct(cartId, productId))
-                .ifPresentOrElse(
-                        item -> item.setQuantity(quantity),
-                        () -> cartItemRepository.save(
-                                new CartItem(UUID.randomUUID(), cartId, productId, quantity))
-                );
+        CartItem item = cart.setProductQuantity(productId, quantity);
+        if (item.isNew()) {
+            cartItemRepository.save(item);
+        }
         cart.touch(Instant.now());
 
         return buildCartResponse(cart);
@@ -89,25 +87,27 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public CartResponse removeProductFromCart(UUID cartId, UUID productId) {
         Cart cart = findActiveCart(cartId);
-        cartItemRepository.deleteByCartIdAndProductId(cartId, productId);
+        cart.removeProduct(productId).ifPresent(cartItemRepository::delete);
         cart.touch(Instant.now());
 
         return buildCartResponse(cart);
     }
 
     private CartResponse buildCartResponse(Cart cart) {
-        List<CartItem> items = cartItemRepository.findAll(
-                CartItemSpecifications.forCart(cart.getId()), Sort.by("productId"));
+        List<CartItem> items = cart.getItems();
 
         Map<UUID, ProductDetails> products = productQueryService.findByIds(
                 items.stream().map(CartItem::getProductId).toList());
 
-        return cartMapper.toResponse(cart, items, products);
+        return cartMapper.toResponse(cart, products);
     }
 
     private Cart findCart(UUID cartId) {
-        return cartRepository.findOne(
-                        CartSpecifications.hasIdAndUser(cartId, currentUserProvider.demoPrincipalUserId()))
+        Specification<Cart> cartWithItems = CartSpecifications
+                .hasIdAndUser(cartId, currentUserProvider.demoPrincipalUserId())
+                .and(CartSpecifications.fetchItems());
+
+        return cartRepository.findOne(cartWithItems)
                 .orElseThrow(() -> new NotFoundException(
                         "Cart not found", "No cart exists for the current user"));
     }

@@ -48,13 +48,13 @@ public class ProductImportSubmissionServiceImpl implements ProductImportSubmissi
 
         String filename = safeFilename(file.getOriginalFilename());
 
-        UUID importId = UUID.randomUUID();
-
         Instant submittedAt = Instant.now();
 
-        ProductImport productImport = new ProductImport(importId, filename, content, submittedAt);
+        ProductImport productImport = new ProductImport(filename, content, submittedAt);
 
         productImportRepository.save(productImport);
+
+        UUID importId = productImport.getId();
 
         eventPublisher.publishEvent(new ProductImportSubmitted(importId));
 

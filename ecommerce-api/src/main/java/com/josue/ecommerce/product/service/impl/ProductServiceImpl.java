@@ -32,24 +32,29 @@ public class ProductServiceImpl implements ProductService {
         this.productMapper = productMapper;
     }
 
-    @Transactional @Override public ProductResponse create(CreateProduct request) {
+    @Transactional
+    @Override
+    public ProductResponse createProduct(CreateProduct request) {
         Sku sku = new Sku(request.sku());
 
         if (productRepository.exists(ProductSpecifications.hasNormalizedSku(sku.value()))) {
             throw new BadRequestException(HttpStatus.CONFLICT, "Duplicate SKU", "A product with this SKU already exists");
         }
 
-        UUID productId = UUID.randomUUID();
-        Product product = productMapper.toEntity(request, sku, productId);
+        Product product = productMapper.toEntity(request, sku);
 
         return productMapper.toResponse(productRepository.save(product));
     }
 
-    @Transactional(readOnly = true) @Override public ProductResponse get(UUID productId) {
+    @Transactional(readOnly = true)
+    @Override
+    public ProductResponse getProduct(UUID productId) {
         return productMapper.toResponse(findActive(productId));
     }
 
-    @Transactional @Override public ProductResponse update(UUID productId, UpdateProduct request) {
+    @Transactional
+    @Override
+    public ProductResponse updateProduct(UUID productId, UpdateProduct request) {
         Product product = findActive(productId);
         if (product.getVersion() != request.version()) {
             throw new ApiException(HttpStatus.CONFLICT, "Concurrent update conflict",
@@ -69,16 +74,17 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toResponse(product);
     }
 
-    @Transactional @Override public void delete(UUID productId) {
+    @Transactional
+    @Override
+    public void deleteProduct(UUID productId) {
         Product product = findActive(productId);
         product.deactivate(Instant.now());
     }
 
     private Product findActive(UUID productId) {
-        Product product = productRepository.findOne(
+        return productRepository.findOne(
                         ProductSpecifications.hasId(productId).and(ProductSpecifications.isActive()))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Product not found",
                         "No product exists with the supplied ID"));
-        return product;
     }
 }

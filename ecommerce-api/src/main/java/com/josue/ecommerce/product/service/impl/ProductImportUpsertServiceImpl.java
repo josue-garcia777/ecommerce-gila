@@ -13,7 +13,6 @@ import com.josue.ecommerce.shared.ValueObjects.Money;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -52,7 +51,6 @@ public class ProductImportUpsertServiceImpl implements ProductImportUpsertServic
 
             if (product == null) {
                 product = new Product(
-                        UUID.randomUUID(),
                         new Sku(command.sku()),
                         command.name(),
                         command.description(),

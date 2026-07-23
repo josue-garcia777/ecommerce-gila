@@ -145,3 +145,137 @@ GET /orders — List of Orders on user
 
 ```
 
+# High Level Design
+
+
+![Async product import design](images/high-level-design.png)
+
+Modules:
+
+- Product:
+- Importing:
+- Cart
+- Order
+- Identify: Fake @Auth
+
+
+# Deep Dives
+
+## Excel Processing (Diagram)
+
+![Async product import design](images/async-product-import.png)
+
+### File Processing
+
+-  strict file with just the 7 Expected Headers.
+    - Rules:
+        - Price and Weight must be valid Numeric and not be negative
+        - Stock non Negative Integer, Zero is Valid
+        - Sku must be unique.
+        - Existing Sku are updated. 
+        - Sku that are not in system and valid create a new product
+        
+CSV contains SQL injection Values:
+    - SQL is prevented at JPA.
+    - XSS is prevented at rendering with react.
+
+
+
+## Check out flow
+
+- check repeated request.
+- if present checkout request return Order
+- retrieve Cart for user and checkout cartId
+- validate Cart
+- decrement Atomic inventory count
+- createPendingOrder
+- flush Order in DB
+- autorize Payment
+- confirm order and complete checkout
+
+*** ALl operations are under the same transaction***
+if one fails all rollback is perform
+aplying single unit of work.
+
+Checkout expect a Idempotency-key.
+this will generate a Order with pending_payment 
+and the checkout summary. After the payment gateway returns
+confirmation. THe order becomes CONFIRM and Cart CHECKOUT.
+Reusing the same Idempotency-Key returns existing order
+    - if the checkout is already in progress we return a conflict (optimistic locking for checkout)
+
+
+
+### Search
+ - for simplicity for search we are unsing LIKE %q%.
+    - this scans every row on the DB at scale. Text Search index or a dedicated DB like Elastic
+
+Cursor Pagination.
+    - I have decided to use a simple cursor pagination.
+
+# How to Run the project locally
+
+## Proyect structure
+**ROOT:**
+    - ecommerce-api
+        - Spring boot App:
+            - JPA, H2 or Postgress, Hibernate, JAVA 21, Spring boot 4.1.
+        - DockerFile
+    - ecommerce-client:
+        - React + Vite App
+            - SWR + React Router Dom
+        - DockerFile
+
+    - Compose provisionates for back and front end
+        - check on healthy service dependencies
+
+
+### To Run it with Local DB (H2)
+```
+docker compose up --build
+
+```
+
+
+### With Postgress
+too run with postgress
+
+```
+docker compose -f compose.yaml -f compose.postgres.yaml up --build
+```
+
+## Open client or swagger
+
+```
+Frontend:
+http://localhost:3000
+
+Swagger:
+
+http://localhost:8080/swagger-ui/index.html
+```
+
+
+Commands:
+
+```
+docker compose ps
+```
+Shows running services.
+
+```
+docker compose logs -f api
+```
+
+Shows backend logs.
+
+```
+docker compose logs -f client
+```
+Shows clientlogs.
+
+```
+docker compose down
+```
+
+Stops everything.

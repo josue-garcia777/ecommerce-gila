@@ -6,6 +6,8 @@ import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
@@ -21,6 +23,7 @@ import java.util.UUID;
 public class Product {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Embedded
@@ -72,9 +75,8 @@ public class Product {
     protected Product() {
     }
 
-    public Product(UUID id, Sku sku, String name, String description, ProductCategory category, Money price,
+    public Product(Sku sku, String name, String description, ProductCategory category, Money price,
                    int stock, BigDecimal weightKg, String imageUrl, Instant now) {
-        this.id = id;
         this.sku = sku;
         applyProductDetails(name, description, category, price, stock, weightKg, imageUrl);
         this.active = true;

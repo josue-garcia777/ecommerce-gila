@@ -10,6 +10,7 @@ public final class OrderItemSpecifications {
     }
 
     public static Specification<OrderItem> forOrder(UUID orderId) {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("orderId"), orderId);
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("order").get("id"), orderId);
     }
 }

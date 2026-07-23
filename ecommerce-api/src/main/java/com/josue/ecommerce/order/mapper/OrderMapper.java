@@ -7,17 +7,16 @@ import com.josue.ecommerce.order.dto.OrderMoneyResponse;
 import com.josue.ecommerce.order.dto.OrderResponse;
 import com.josue.ecommerce.order.dto.OrderSummaryResponse;
 import com.josue.ecommerce.shared.ValueObjects.Money;
-import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
 public class OrderMapper {
 
-    public OrderResponse toResponse(CustomerOrder order, List<OrderItem> items) {
+    public OrderResponse toResponse(CustomerOrder order) {
         return new OrderResponse(
                 order.getId(), order.getCartId(), order.getStatus(), money(order.getTotal()),
                 order.getPaymentReference(), order.getCreatedAt(),
-                items.stream().map(this::item).toList()
+                order.getItems().stream().map(this::item).toList()
         );
     }
 

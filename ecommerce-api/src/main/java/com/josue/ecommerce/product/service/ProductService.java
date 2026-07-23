@@ -9,14 +9,14 @@ import java.util.UUID;
 
 public interface ProductService {
     @Transactional
-    ProductResponse create(CreateProduct request);
+    ProductResponse createProduct(CreateProduct request);
 
     @Transactional(readOnly = true)
-    ProductResponse get(UUID productId);
+    ProductResponse getProduct(UUID productId);
 
     @Transactional
-    ProductResponse update(UUID productId, UpdateProduct request);
+    ProductResponse updateProduct(UUID productId, UpdateProduct request);
 
     @Transactional
-    void delete(UUID productId);
+    void deleteProduct(UUID productId);
 }

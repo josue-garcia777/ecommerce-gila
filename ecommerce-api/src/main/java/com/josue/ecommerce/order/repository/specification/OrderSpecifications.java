@@ -1,7 +1,10 @@
 package com.josue.ecommerce.order.repository.specification;
 
 import com.josue.ecommerce.order.domain.CustomerOrder;
+import jakarta.persistence.criteria.JoinType;
+
 import java.util.UUID;
+
 import org.springframework.data.jpa.domain.Specification;
 
 public final class OrderSpecifications {
@@ -25,7 +28,23 @@ public final class OrderSpecifications {
         );
     }
 
+    public static Specification<CustomerOrder> hasUser(UUID userId) {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.and(
+                criteriaBuilder.equal(root.get("userId"), userId)
+        );
+    }
+
     public static Specification<CustomerOrder> forUser(UUID userId) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("userId"), userId);
+    }
+
+    public static Specification<CustomerOrder> fetchItems() {
+        return (root, query, criteriaBuilder) -> {
+
+            root.fetch("items", JoinType.LEFT);
+            query.distinct(true);
+
+            return criteriaBuilder.conjunction();
+        };
     }
 }

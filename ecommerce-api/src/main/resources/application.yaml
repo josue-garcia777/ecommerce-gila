@@ -32,3 +32,8 @@ management:
     health:
       probes:
         enabled: true
+
+app:
+  payment:
+    fake:
+      fail-key: PAYMENT_FAIL

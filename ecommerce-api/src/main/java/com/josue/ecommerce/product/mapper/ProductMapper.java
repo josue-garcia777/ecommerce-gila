@@ -10,7 +10,6 @@ import com.josue.ecommerce.shared.ValueObjects.Money;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Component
 public class ProductMapper {
@@ -33,10 +32,9 @@ public class ProductMapper {
         );
     }
 
-    public Product toEntity(CreateProduct productRequest, Sku sku, UUID id) {
+    public Product toEntity(CreateProduct productRequest, Sku sku) {
         Instant now = Instant.now();
         return new Product(
-                UUID.randomUUID(),
                 sku,
                 productRequest.name(),
                 productRequest.description(),

@@ -1,18 +1,13 @@
 package com.josue.ecommerce.order.domain;
 
 import com.josue.ecommerce.shared.ValueObjects.Money;
-import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.AttributeOverrides;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -21,6 +16,7 @@ import java.util.UUID;
 public class CustomerOrder {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "cart_id", nullable = false, unique = true)
@@ -51,14 +47,17 @@ public class CustomerOrder {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @OrderBy("productName ASC")
+    private List<OrderItem> items = new ArrayList<>();
+
     protected CustomerOrder() {
     }
 
-    public CustomerOrder(UUID id, UUID cartId, UUID userId, Money total, String idempotencyKey, Instant createdAt) {
+    public CustomerOrder(UUID cartId, UUID userId, Money total, String idempotencyKey, Instant createdAt) {
         if (idempotencyKey == null || idempotencyKey.isBlank() || idempotencyKey.length() > 128) {
             throw new IllegalArgumentException("A valid idempotency key is required");
         }
-        this.id = id;
         this.cartId = cartId;
         this.userId = userId;
         this.status = OrderStatus.PENDING_PAYMENT;
@@ -67,11 +66,24 @@ public class CustomerOrder {
         this.createdAt = createdAt;
     }
 
+    public List<OrderItem> getItems() {
+        return Collections.unmodifiableList(items);
+    }
+
+    public void addItem(UUID productId, String sku, String productName, Money unitPrice,
+                        int quantity, Money lineTotal) {
+        if (status != OrderStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException("Items can only be added to a pending order");
+        }
+        OrderItem item = new OrderItem(this, productId, sku, productName, unitPrice, quantity, lineTotal);
+        items.add(item);
+    }
+
     public void confirm(String paymentReference) {
         if (status != OrderStatus.PENDING_PAYMENT) {
             throw new IllegalStateException("Only a pending order can be confirmed");
         }
-        if (paymentReference == null || paymentReference.isBlank() || paymentReference.length() > 100) {
+        if (paymentReference == null || paymentReference.isBlank()) {
             throw new IllegalArgumentException("A valid payment reference is required");
         }
         this.paymentReference = paymentReference;

@@ -5,7 +5,7 @@ import com.josue.ecommerce.importing.csv.ProductCsvParser;
 
 import java.util.UUID;
 
-import com.josue.ecommerce.importing.service.ProductImportCompletionService;
+import com.josue.ecommerce.importing.service.ProductImportUpdateService;
 import com.josue.ecommerce.importing.service.ProductImportStart;
 import com.josue.ecommerce.importing.service.ProductImportService;
 import com.josue.ecommerce.importing.service.cmd.ImportWorkItem;
@@ -20,10 +20,10 @@ public class ProductImportProcessingServiceImpl implements ProductImportStart {
 
     private final ProductImportService productImportService;
     private final ProductCsvParser csvParser;
-    private final ProductImportCompletionService productCompleteService;
+    private final ProductImportUpdateService productCompleteService;
 
     public ProductImportProcessingServiceImpl(ProductImportService productImportService, ProductCsvParser csvParser,
-                                              ProductImportCompletionService completionService) {
+                                              ProductImportUpdateService completionService) {
         this.productImportService = productImportService;
         this.csvParser = csvParser;
         this.productCompleteService = completionService;
@@ -36,7 +36,7 @@ public class ProductImportProcessingServiceImpl implements ProductImportStart {
 
             ProductCsvParseResult result = csvParser.parse(workItem.content());
 
-            productCompleteService.completeImport(importId, result);
+            productCompleteService.buildAndUpsertImportsResults(importId, result);
         } catch (Exception exception) {
             log.error("Product import {} failed", importId, exception);
             try {

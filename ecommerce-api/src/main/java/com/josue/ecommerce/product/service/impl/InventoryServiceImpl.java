@@ -4,12 +4,12 @@ import com.josue.ecommerce.product.domain.Product;
 import com.josue.ecommerce.product.repository.ProductRepository;
 import com.josue.ecommerce.product.repository.specification.ProductSpecifications;
 import com.josue.ecommerce.product.service.InventoryService;
+import com.josue.ecommerce.product.service.cmd.InventoryDecrement;
 import com.josue.ecommerce.product.service.cmd.ProductDetails;
 import com.josue.ecommerce.shared.error.InsufficientInventoryStock;
 
 import java.time.Instant;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -28,25 +28,56 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     @Override
-    public Map<UUID, ProductDetails> decrementInventoryAndLoad(Map<UUID, Integer> quantitiesByProductId) {
+    public Map<UUID, ProductDetails> decrementInventoryAndLoad(List<InventoryDecrement> requests) {
+        Map<UUID, Integer> quantitiesByProductId = groupQuantitiesByProductId(requests);
+        decrementInventory(quantitiesByProductId);
 
-        for (Map.Entry<UUID, Integer> request : quantitiesByProductId.entrySet()) {
-            UUID productId = request.getKey();
-            int quantity = request.getValue();
+        return productRepository.findAll(ProductSpecifications.hasIdIn(quantitiesByProductId.keySet())).stream()
+                .map(this::details).collect(
+                        Collectors.toUnmodifiableMap(ProductDetails::id, Function.identity())
+                );
+    }
 
-            if (productRepository.decrementStock(productId, quantity, Instant.now()) != 1) {
+    private Map<UUID, Integer> groupQuantitiesByProductId(List<InventoryDecrement> requests) {
+        Map<UUID, Integer> quantitiesByProductId = new HashMap<>();
+
+        for (InventoryDecrement request : requests) {
+            quantitiesByProductId.merge(
+                    request.productId(),
+                    request.quantity(),
+                    Math::addExact
+            );
+        }
+
+        return quantitiesByProductId;
+    }
+
+    private void decrementInventory(
+            Map<UUID, Integer> quantitiesByProductId
+    ) {
+        Instant updatedAt = Instant.now();
+
+        List<UUID> productIds =
+                new ArrayList<>(quantitiesByProductId.keySet());
+
+        productIds.sort(UUID::compareTo);
+
+        for (UUID productId : productIds) {
+            int quantity = quantitiesByProductId.get(productId);
+
+            int updatedRows = productRepository.decrementStock(
+                    productId,
+                    quantity,
+                    updatedAt
+            );
+
+            if (updatedRows != 1) {
                 throw new InsufficientInventoryStock(
                         "Insufficient stock",
                         "A product is unavailable or does not have enough stock to complete checkout"
                 );
             }
         }
-
-
-        return productRepository
-                .findAll(ProductSpecifications.hasIdIn(quantitiesByProductId.keySet())).stream()
-                .map(this::details)
-                .collect(Collectors.toMap(ProductDetails::id, Function.identity()));
     }
 
     private ProductDetails details(Product product) {

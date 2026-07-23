@@ -4,10 +4,18 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import lombok.Getter;
@@ -20,6 +28,7 @@ public class ProductImport {
 
     @Getter
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false)
@@ -55,15 +64,31 @@ public class ProductImport {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @OneToMany(mappedBy = "productImport", fetch = FetchType.LAZY)
+    @OrderBy("rowNumber ASC")
+    private List<ProductImportError> errors = new ArrayList<>();
+
     protected ProductImport() {
     }
 
-    public ProductImport(UUID id, String filename, byte[] fileContent, Instant submittedAt) {
-        this.id = id;
+    public ProductImport(String filename, byte[] fileContent, Instant submittedAt) {
         this.filename = filename;
         this.fileContent = fileContent.clone();
         this.status = ImportStatus.PENDING;
         this.submittedAt = submittedAt;
+    }
+
+    public List<ProductImportError> getErrors() {
+        return Collections.unmodifiableList(errors);
+    }
+
+    public ProductImportError addError(int rowNumber, String sku, String reason) {
+        if (status != ImportStatus.PROCESSING) {
+            throw new IllegalStateException("Errors can only be added while an import is processing");
+        }
+        ProductImportError error = new ProductImportError(this, rowNumber, sku, reason);
+        errors.add(error);
+        return error;
     }
 
     public void start() {

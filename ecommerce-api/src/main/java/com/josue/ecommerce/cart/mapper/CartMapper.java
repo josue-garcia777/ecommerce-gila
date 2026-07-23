@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class CartMapper {
 
-    public CartResponse toResponse(Cart cart, List<CartItem> cartItems, Map<UUID, ProductDetails> products) {
-        List<CartItemResponse> items = cartItems.stream()
+    public CartResponse toResponse(Cart cart, Map<UUID, ProductDetails> products) {
+        List<CartItemResponse> items = cart.getItems().stream()
                 .map(item -> item(item, products.get(item.getProductId())))
                 .toList();
 

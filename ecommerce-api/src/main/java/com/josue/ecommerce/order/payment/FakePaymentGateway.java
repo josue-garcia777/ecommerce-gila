@@ -5,10 +5,12 @@ import com.josue.ecommerce.shared.ValueObjects.Money;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
+@Log4j2
 public class FakePaymentGateway implements PaymentGateway {
 
     private final String failureIdempotencyKey;
@@ -19,7 +21,7 @@ public class FakePaymentGateway implements PaymentGateway {
 
     @Override
     public String authorize(UUID orderId, Money amount, String idempotencyKey) {
-
+        log.info("Failure idepotencyKey: {}", failureIdempotencyKey);
         if (!failureIdempotencyKey.isBlank() && failureIdempotencyKey.equals(idempotencyKey)) {
             throw new PaymentGatewayException("Configured fake payment failure");
         }

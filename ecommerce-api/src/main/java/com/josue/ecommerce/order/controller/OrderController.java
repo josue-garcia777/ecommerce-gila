@@ -2,7 +2,7 @@ package com.josue.ecommerce.order.controller;
 
 import com.josue.ecommerce.order.dto.OrderResponse;
 import com.josue.ecommerce.order.dto.OrderSummaryResponse;
-import com.josue.ecommerce.order.service.OrderQueryService;
+import com.josue.ecommerce.order.service.OrderService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/orders")
 public class OrderController {
 
-    private final OrderQueryService orderQueryService;
+    private final OrderService orderQueryService;
 
-    public OrderController(OrderQueryService orderQueryService) {
+    public OrderController(OrderService orderQueryService) {
         this.orderQueryService = orderQueryService;
     }
 

@@ -1,40 +1,26 @@
 services:
-  postgres:
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
-      POSTGRES_USER: ${POSTGRES_USER:-ecommerce}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ecommerce}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - ecommerce-postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 3s
-      retries: 12
-
-  app:
+  api:
     build:
-      context: .
+      context: ./ecommerce-api
       dockerfile: Dockerfile
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ecommerce}
-      DB_USERNAME: ${POSTGRES_USER:-ecommerce}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-ecommerce}
+      SPRING_PROFILES_ACTIVE: h2
       SERVER_PORT: 8080
     ports:
       - "${APP_PORT:-8080}:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
       interval: 10s
       timeout: 3s
       start_period: 30s
       retries: 6
 
-volumes:
-  ecommerce-postgres-data:
+  client:
+    build:
+      context: ./ecommerce-client
+      dockerfile: Dockerfile
+    ports:
+      - "${CLIENT_PORT:-3000}:80"
+    depends_on:
+      api:
+        condition: service_healthy

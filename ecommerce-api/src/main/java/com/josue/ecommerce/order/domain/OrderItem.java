@@ -6,7 +6,12 @@ import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 
@@ -18,10 +23,12 @@ import java.util.UUID;
 public class OrderItem {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "order_id", nullable = false)
-    private UUID orderId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "order_id", nullable = false)
+    private CustomerOrder order;
 
     @Column(name = "product_id", nullable = false)
     private UUID productId;
@@ -56,10 +63,12 @@ public class OrderItem {
     protected OrderItem() {
     }
 
-    public OrderItem(UUID id, UUID orderId, UUID productId, String sku, String productName, Money unitPrice,
-                     int quantity, Money lineTotal) {
-        this.id = id;
-        this.orderId = orderId;
+    OrderItem(CustomerOrder order, UUID productId, String sku, String productName, Money unitPrice,
+              int quantity, Money lineTotal) {
+        if (order == null) {
+            throw new IllegalArgumentException("Order is required");
+        }
+        this.order = order;
         this.productId = productId;
         this.sku = sku;
         this.productName = productName;
