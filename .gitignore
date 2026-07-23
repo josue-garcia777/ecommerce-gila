@@ -1,0 +1,22 @@
+# Java / Maven
+ecommerce-api/target/
+*.class
+
+# Node / Vite
+ecommerce-client/node_modules/
+ecommerce-client/dist/
+
+# Env files
+.env
+*.env
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+
+# Logs
+*.log
