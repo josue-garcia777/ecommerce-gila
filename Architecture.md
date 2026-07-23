@@ -1,14 +1,30 @@
 ## Ecommerce
 
 ## Functional Req:
-    - CREATE, UPDATE, DELETE Products
-    - Import from CSV (21/July/2026)
-    - Search for Products -> name, by catergory
-    - Purchase Products -> Show Orders
-
+    - Create, update, retrieve and delete products
+    - Search products by name and category
+    - Import products from CSV
+    - Add, update, and remove cart items
+    - Check out a cart
+    - View created orders
+    
 ## Non Functional Req:
     - Consistency for Purchase, import csv and create.
-    - Low Latency
+    - Performance
+
+## Consistency Requirements
+
+- Product SKUs are unique
+- Inventory cannot become negative
+- A cart can produce at most one order
+- Reusing an idempotency key returns the same order
+- Each user has at most one active cart
+- Order items preserve Snapshots (product information and price used at checkout)
+
+## Performance
+- CSV processing does not block the HTTP request thread
+- Product search uses cursor-based pagination
+- Inventory updates are performed atomically in the database
 
 ## Entities
 
@@ -73,6 +89,18 @@
     - @Auth (simulated at for now harcoded userId)
         - demoPrincipalUserId -> fixed Id ( in a real system we will use a UserPrincipal details for this.)
 
+### Database Contraints
+products.sku
+    UNIQUE
+
+cart_items(cart_id, product_id)
+    UNIQUE
+
+orders(user_id, idempotency_key)
+    UNIQUE
+
+orders.cart_id
+    UNIQUE
 
 ### Value Objects
     - Money
@@ -183,19 +211,18 @@ CSV contains SQL injection Values:
 
 ## Check out flow
 
-- check repeated request.
-- if present checkout request return Order
-- retrieve Cart for user and checkout cartId
-- validate Cart
-- decrement Atomic inventory count
-- createPendingOrder
-- flush Order in DB
-- autorize Payment
-- confirm order and complete checkout
+1) Search for an existing order using userId + idempotencyKey.
+2) if present checkout request return Order
+3) validate Cart
+4) Read current product prices and make checkout summary.
+5) Decrement Inventory in a Single Unit of work.
+6) Create the order and orderitems snapshots.
+7) autorize Payment
+8) confirm order and complete checkout
 
 *** ALl operations are under the same transaction***
-if one fails all rollback is perform
-aplying single unit of work.
+if one fails all rollback is perform aplying single unit of work.
+
 
 Checkout expect a Idempotency-key.
 this will generate a Order with pending_payment 
@@ -203,6 +230,10 @@ and the checkout summary. After the payment gateway returns
 confirmation. THe order becomes CONFIRM and Cart CHECKOUT.
 Reusing the same Idempotency-Key returns existing order
     - if the checkout is already in progress we return a conflict (optimistic locking for checkout)
+
+
+Carts has no expiration, so if a user has old price, check out might show different results on screen
+ideally you should notify of a product price change, we just handle the case if it is out of stock.
 
 
 
@@ -275,7 +306,9 @@ docker compose logs -f client
 Shows clientlogs.
 
 ```
+
 docker compose down
+
 ```
 
 Stops everything.
