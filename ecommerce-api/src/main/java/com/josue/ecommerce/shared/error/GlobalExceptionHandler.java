@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -71,6 +72,13 @@ public class GlobalExceptionHandler {
                                                            HttpServletRequest request) {
         return buildProblemResponse(HttpStatus.CONFLICT, "Concurrent update conflict",
                 "The resource changed while the request was being processed", request);
+    }
+
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    ResponseEntity<ProblemDetail> handleDatabaseConcurrencyConflict(
+            PessimisticLockingFailureException exception, HttpServletRequest request) {
+        return buildProblemResponse(HttpStatus.CONFLICT, "Concurrent transaction conflict",
+                "The transaction could not acquire a database lock; retry with the same idempotency key", request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

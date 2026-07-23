@@ -6,7 +6,7 @@ import com.josue.ecommerce.importing.csv.ProductCsvParser;
 import java.util.UUID;
 
 import com.josue.ecommerce.importing.service.ProductImportCompletionService;
-import com.josue.ecommerce.importing.service.ProductImportProcessingService;
+import com.josue.ecommerce.importing.service.ProductImportStart;
 import com.josue.ecommerce.importing.service.ProductImportService;
 import com.josue.ecommerce.importing.service.cmd.ImportWorkItem;
 import org.slf4j.Logger;
@@ -14,9 +14,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ProductImportProcessingServiceImpl implements ProductImportProcessingService {
+public class ProductImportProcessingServiceImpl implements ProductImportStart {
 
-    private static final Logger log = LoggerFactory.getLogger(ProductImportProcessingService.class);
+    private static final Logger log = LoggerFactory.getLogger(ProductImportStart.class);
 
     private final ProductImportService productImportService;
     private final ProductCsvParser csvParser;
@@ -33,7 +33,9 @@ public class ProductImportProcessingServiceImpl implements ProductImportProcessi
     public void process(UUID importId) {
         try {
             ImportWorkItem workItem = productImportService.findImportItem(importId);
+
             ProductCsvParseResult result = csvParser.parse(workItem.content());
+
             productCompleteService.completeImport(importId, result);
         } catch (Exception exception) {
             log.error("Product import {} failed", importId, exception);

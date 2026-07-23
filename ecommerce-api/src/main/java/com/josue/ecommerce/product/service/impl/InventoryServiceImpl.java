@@ -2,13 +2,12 @@ package com.josue.ecommerce.product.service.impl;
 
 import com.josue.ecommerce.product.domain.Product;
 import com.josue.ecommerce.product.repository.ProductRepository;
+import com.josue.ecommerce.product.repository.specification.ProductSpecifications;
 import com.josue.ecommerce.product.service.InventoryService;
 import com.josue.ecommerce.product.service.cmd.ProductDetails;
 import com.josue.ecommerce.shared.error.InsufficientInventoryStock;
 
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -29,13 +28,13 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     @Override
-    public Map<UUID, ProductDetails> decrementAllAndLoad(Map<UUID, Integer> quantitiesByProductId) {
-        List<Map.Entry<UUID, Integer>> orderedRequests = quantitiesByProductId.entrySet().stream()
-                .sorted(Comparator.comparing(entry -> entry.getKey().toString()))
-                .toList();
+    public Map<UUID, ProductDetails> decrementInventoryAndLoad(Map<UUID, Integer> quantitiesByProductId) {
 
-        for (Map.Entry<UUID, Integer> request : orderedRequests) {
-            if (productRepository.decrementStock(request.getKey(), request.getValue(), Instant.now()) != 1) {
+        for (Map.Entry<UUID, Integer> request : quantitiesByProductId.entrySet()) {
+            UUID productId = request.getKey();
+            int quantity = request.getValue();
+
+            if (productRepository.decrementStock(productId, quantity, Instant.now()) != 1) {
                 throw new InsufficientInventoryStock(
                         "Insufficient stock",
                         "A product is unavailable or does not have enough stock to complete checkout"
@@ -43,13 +42,11 @@ public class InventoryServiceImpl implements InventoryService {
             }
         }
 
-        Map<UUID, ProductDetails> products = productRepository.findAllByIdIn(quantitiesByProductId.keySet()).stream()
+
+        return productRepository
+                .findAll(ProductSpecifications.hasIdIn(quantitiesByProductId.keySet())).stream()
                 .map(this::details)
                 .collect(Collectors.toMap(ProductDetails::id, Function.identity()));
-        if (products.size() != quantitiesByProductId.size()) {
-            throw new IllegalStateException("Inventory changed during checkout");
-        }
-        return products;
     }
 
     private ProductDetails details(Product product) {

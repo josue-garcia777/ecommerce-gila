@@ -13,6 +13,7 @@ import org.hibernate.type.SqlTypes;
 @Getter
 @Embeddable
 public class Money {
+    private final static String DEFAULT_CURR = "USD";
 
     @Column(name = "amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
@@ -20,6 +21,7 @@ public class Money {
     @Column(name = "currency", nullable = false, length = 3, columnDefinition = "CHAR(3)")
     @JdbcTypeCode(SqlTypes.CHAR)
     private String currency;
+
 
     protected Money() {
     }
@@ -34,7 +36,7 @@ public class Money {
         }
 
         if (currency == null || currency.isBlank()) {
-            throw new IllegalArgumentException("Currency is required");
+            currency = DEFAULT_CURR;
         }
 
         String normalizedCurrency = currency.trim().toUpperCase();

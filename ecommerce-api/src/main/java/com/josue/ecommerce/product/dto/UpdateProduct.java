@@ -11,14 +11,14 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
-public record UpdateProductRequest(
-        @NotBlank @Size(max = 200) String name,
-        @NotBlank @Size(max = 2000) String description,
-        @NotBlank @Size(max = 100) String category,
+public record UpdateProduct(
+        @NotBlank String name,
+        @NotBlank String description,
+        @NotBlank String category,
         @NotNull @Valid MoneyRequest price,
         @NotNull @Min(0) Integer stock,
         @NotNull @DecimalMin("0.000") @Digits(integer = 7, fraction = 3) BigDecimal weightKg,
-        @Size(max = 2048) String imageUrl,
+        String imageUrl,
         @NotNull @PositiveOrZero Long version
 ) {
 }

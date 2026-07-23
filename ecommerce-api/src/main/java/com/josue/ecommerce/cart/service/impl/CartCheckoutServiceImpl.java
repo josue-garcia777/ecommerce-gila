@@ -4,6 +4,7 @@ import com.josue.ecommerce.cart.domain.Cart;
 import com.josue.ecommerce.cart.domain.CartStatus;
 import com.josue.ecommerce.cart.repository.CartItemRepository;
 import com.josue.ecommerce.cart.repository.CartRepository;
+import com.josue.ecommerce.cart.repository.specification.CartItemSpecifications;
 import com.josue.ecommerce.cart.service.CartCheckoutService;
 import com.josue.ecommerce.cart.service.cmd.CheckoutCart;
 import com.josue.ecommerce.cart.service.cmd.CheckoutCartItem;
@@ -14,6 +15,7 @@ import java.util.UUID;
 import com.josue.ecommerce.shared.error.BadRequestException;
 import com.josue.ecommerce.shared.error.NotFoundException;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +30,9 @@ public class CartCheckoutServiceImpl implements CartCheckoutService {
         this.cartItemRepository = cartItemRepository;
     }
 
-    @Transactional @Override public CheckoutCart checkoutCartForUser(UUID cartId, UUID userId) {
+    @Transactional
+    @Override
+    public CheckoutCart checkoutCartForUser(UUID cartId, UUID userId) {
         Cart cart = cartRepository.findCartByIdForUpdate(cartId)
                 .orElseThrow(this::notFound);
 
@@ -36,19 +40,20 @@ public class CartCheckoutServiceImpl implements CartCheckoutService {
             throw notFound();
         }
 
-        if (cart.getStatus() == CartStatus.ABANDONED) {
-            throw new BadRequestException(HttpStatus.CONFLICT, "Invalid cart state", "An abandoned cart cannot be checked out");
-        }
+       
 
         return new CheckoutCart(
                 cart.getId(), cart.getUserId(), cart.getStatus(),
-                cartItemRepository.findAllByCartIdOrderByProductId(cartId).stream()
+                cartItemRepository.findAll(
+                                CartItemSpecifications.forCart(cartId), Sort.by("productId")).stream()
                         .map(item -> new CheckoutCartItem(item.getProductId(), item.getQuantity()))
                         .toList()
         );
     }
 
-    @Transactional @Override public void markCheckedOut(UUID cartId) {
+    @Transactional
+    @Override
+    public void markCheckedOut(UUID cartId) {
         Cart cart = cartRepository.findById(cartId)
                 .orElseThrow(() -> new IllegalStateException("Locked cart disappeared"));
 

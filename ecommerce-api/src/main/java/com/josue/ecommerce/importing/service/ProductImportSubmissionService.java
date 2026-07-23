@@ -5,6 +5,5 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface ProductImportSubmissionService {
-    @Transactional
     ImportSubmissionResponse validateAndSubmitProducts(MultipartFile file);
 }

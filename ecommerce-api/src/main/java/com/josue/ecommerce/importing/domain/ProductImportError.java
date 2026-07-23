@@ -23,11 +23,11 @@ public class ProductImportError {
     private int rowNumber;
 
     @Getter
-    @Column(length = 64)
+    @Column()
     private String sku;
 
     @Getter
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = false)
     private String reason;
 
     protected ProductImportError() {

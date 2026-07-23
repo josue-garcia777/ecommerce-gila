@@ -28,10 +28,10 @@ public class Product {
             updatable = false))
     private Sku sku;
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, length = 2000)
+    @Column(nullable = false)
     private String description;
 
     @Embedded
@@ -53,7 +53,7 @@ public class Product {
     @Column(name = "weight_kg", nullable = false, precision = 10, scale = 3)
     private BigDecimal weightKg;
 
-    @Column(name = "image_url", length = 2048)
+    @Column(name = "image_url")
     private String imageUrl;
 
     @Column(nullable = false)

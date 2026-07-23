@@ -3,7 +3,7 @@ package com.josue.ecommerce.product.mapper;
 import com.josue.ecommerce.product.domain.Product;
 import com.josue.ecommerce.product.domain.ProductCategory;
 import com.josue.ecommerce.product.domain.Sku;
-import com.josue.ecommerce.product.dto.CreateProductRequest;
+import com.josue.ecommerce.product.dto.CreateProduct;
 import com.josue.ecommerce.product.dto.MoneyResponse;
 import com.josue.ecommerce.product.dto.ProductResponse;
 import com.josue.ecommerce.shared.ValueObjects.Money;
@@ -33,7 +33,7 @@ public class ProductMapper {
         );
     }
 
-    public Product toEntity(CreateProductRequest productRequest, Sku sku, UUID id) {
+    public Product toEntity(CreateProduct productRequest, Sku sku, UUID id) {
         Instant now = Instant.now();
         return new Product(
                 UUID.randomUUID(),

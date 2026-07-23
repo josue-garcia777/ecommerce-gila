@@ -7,6 +7,8 @@ import com.josue.ecommerce.order.dto.OrderSummaryResponse;
 import com.josue.ecommerce.order.mapper.OrderMapper;
 import com.josue.ecommerce.order.repository.OrderItemRepository;
 import com.josue.ecommerce.order.repository.OrderRepository;
+import com.josue.ecommerce.order.repository.specification.OrderItemSpecifications;
+import com.josue.ecommerce.order.repository.specification.OrderSpecifications;
 import com.josue.ecommerce.order.service.OrderQueryService;
 import com.josue.ecommerce.shared.error.ApiException;
 
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,18 +39,23 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     @Transactional(readOnly = true)
     @Override
     public OrderResponse getOrderById(UUID orderId) {
-        CustomerOrder order = orderRepository.findByIdAndUserId(orderId, currentUserProvider.demoPrincipalUserId())
+        CustomerOrder order = orderRepository.findOne(
+                        OrderSpecifications.hasIdAndUser(
+                                orderId, currentUserProvider.demoPrincipalUserId()))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Order not found",
                         "No order exists with the supplied ID for the current user"));
         return orderMapper.toResponse(order,
-                orderItemRepository.findAllByOrderIdOrderByProductName(orderId));
+                orderItemRepository.findAll(
+                        OrderItemSpecifications.forOrder(orderId), Sort.by("productName")));
     }
 
     @Transactional(readOnly = true)
     @Override
     public List<OrderSummaryResponse> getOrders() {
 
-        return orderRepository.findAllByUserIdOrderByCreatedAtDesc(currentUserProvider.demoPrincipalUserId()).stream()
+        return orderRepository.findAll(
+                        OrderSpecifications.forUser(currentUserProvider.demoPrincipalUserId()),
+                        Sort.by(Sort.Direction.DESC, "createdAt")).stream()
                 .map(orderMapper::toSummary)
                 .toList();
     }

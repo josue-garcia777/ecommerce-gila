@@ -30,14 +30,16 @@ public class ProductImportSubmissionServiceImpl implements ProductImportSubmissi
     private final CsvHeaderValidator csvHeaderValidator;
 
     public ProductImportSubmissionServiceImpl(ProductImportRepository productImportRepository,
-                                          ApplicationEventPublisher eventPublisher,
-                                          CsvHeaderValidator csvHeaderValidator) {
+                                              ApplicationEventPublisher eventPublisher,
+                                              CsvHeaderValidator csvHeaderValidator) {
         this.productImportRepository = productImportRepository;
         this.eventPublisher = eventPublisher;
         this.csvHeaderValidator = csvHeaderValidator;
     }
 
-    @Transactional @Override public ImportSubmissionResponse validateAndSubmitProducts(MultipartFile file) {
+    @Transactional
+    @Override
+    public ImportSubmissionResponse validateAndSubmitProducts(MultipartFile file) {
         validateFile(file);
 
         byte[] content = content(file);

@@ -2,6 +2,7 @@ package com.josue.ecommerce.importing.csv;
 
 import com.josue.ecommerce.product.domain.Sku;
 import com.josue.ecommerce.product.service.cmd.ProductImportCommand;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Component;
@@ -41,7 +43,9 @@ public class ProductCsvParser {
                 rejected.add(new RejectedCsvRow(row.rowNumber(), normalizedSku, "DUPLICATE_SKU_IN_FILE"));
                 continue;
             }
+
             Validation validation = validate(row, normalizedSku);
+
             if (!validation.errors().isEmpty()) {
                 rejected.add(new RejectedCsvRow(row.rowNumber(), normalizedSku,
                         String.join("; ", validation.errors())));
@@ -95,16 +99,25 @@ public class ProductCsvParser {
 
     private Validation validate(RawRow row, String normalizedSku) {
         List<String> errors = new ArrayList<>();
+
         required(row.name(), "Name", 200, errors);
+
         required(row.sku(), "SKU", 64, errors);
+
         required(row.description(), "Description", 2000, errors);
+
         required(row.category(), "Category", 100, errors);
+
         BigDecimal price = decimal(row.price(), "Price", 2, 17, errors);
+
         Integer stock = integer(row.stock(), errors);
+
         BigDecimal weight = decimal(row.weightKg(), "Weight", 3, 7, errors);
+
         if (normalizedSku != null && normalizedSku.length() > 64 && errors.stream().noneMatch(e -> e.startsWith("SKU"))) {
             errors.add("SKU must not exceed 64 characters");
         }
+
         return new Validation(errors, price, stock, weight);
     }
 
@@ -118,17 +131,21 @@ public class ProductCsvParser {
 
     private BigDecimal decimal(String value, String field, int maximumScale, int maximumIntegerDigits,
                                List<String> errors) {
+
         if (!DECIMAL.matcher(value).matches()) {
-            errors.add(field + " must be a decimal number");
+            errors.add(field + " must be a number");
             return null;
         }
+
         BigDecimal decimal = new BigDecimal(value);
         if (decimal.signum() < 0) {
             errors.add(field + " must not be negative");
         }
+
         if (decimal.scale() > maximumScale) {
             errors.add(field + " must have at most " + maximumScale + " decimal places");
         }
+
         if (Math.max(0, decimal.precision() - decimal.scale()) > maximumIntegerDigits) {
             errors.add(field + " is out of range");
         }

@@ -30,7 +30,7 @@ public class CustomerOrder {
     private UUID userId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
+    @Column(nullable = false)
     private OrderStatus status;
 
     @Embedded

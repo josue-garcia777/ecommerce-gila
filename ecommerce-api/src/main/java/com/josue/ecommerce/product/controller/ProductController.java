@@ -1,9 +1,9 @@
 package com.josue.ecommerce.product.controller;
 
-import com.josue.ecommerce.product.dto.CreateProductRequest;
+import com.josue.ecommerce.product.dto.CreateProduct;
 import com.josue.ecommerce.product.dto.ProductPageResponse;
 import com.josue.ecommerce.product.dto.ProductResponse;
-import com.josue.ecommerce.product.dto.UpdateProductRequest;
+import com.josue.ecommerce.product.dto.UpdateProduct;
 import com.josue.ecommerce.product.service.ProductService;
 import com.josue.ecommerce.product.service.ProductSearchService;
 import jakarta.validation.Valid;
@@ -48,7 +48,7 @@ public class ProductController {
     }
 
     @PostMapping("/products")
-    ResponseEntity<ProductResponse> create(@Valid @RequestBody CreateProductRequest request) {
+    ResponseEntity<ProductResponse> create(@Valid @RequestBody CreateProduct request) {
         ProductResponse response = productService.create(request);
         return ResponseEntity.created(URI.create("/api/v1/products/" + response.id())).body(response);
     }
@@ -59,7 +59,7 @@ public class ProductController {
     }
 
     @PutMapping("/products/{productId}")
-    ProductResponse update(@PathVariable UUID productId, @Valid @RequestBody UpdateProductRequest request) {
+    ProductResponse update(@PathVariable UUID productId, @Valid @RequestBody UpdateProduct request) {
         return productService.update(productId, request);
     }
 

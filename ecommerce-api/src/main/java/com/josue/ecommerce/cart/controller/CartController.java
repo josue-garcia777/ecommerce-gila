@@ -1,11 +1,13 @@
 package com.josue.ecommerce.cart.controller;
 
 import com.josue.ecommerce.cart.dto.CartResponse;
-import com.josue.ecommerce.cart.dto.UpdateCartItemRequest;
+import com.josue.ecommerce.cart.dto.UpdateCartItem;
 import com.josue.ecommerce.cart.service.CartService;
 import jakarta.validation.Valid;
+
 import java.net.URI;
 import java.util.UUID;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,7 +41,7 @@ public class CartController {
 
     @PutMapping("/{cartId}/items/{productId}")
     CartResponse setProductQuantity(@PathVariable UUID cartId, @PathVariable UUID productId,
-                                    @Valid @RequestBody UpdateCartItemRequest request) {
+                                    @Valid @RequestBody UpdateCartItem request) {
         return cartService.setQuantity(cartId, productId, request.quantity());
     }
 

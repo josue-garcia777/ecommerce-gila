@@ -5,14 +5,17 @@ import com.josue.ecommerce.product.dto.ProductPageResponse;
 import com.josue.ecommerce.product.dto.ProductResponse;
 import com.josue.ecommerce.product.mapper.ProductMapper;
 import com.josue.ecommerce.product.repository.ProductRepository;
+import com.josue.ecommerce.product.repository.specification.ProductSpecifications;
 import com.josue.ecommerce.product.service.ProductSearchService;
 import com.josue.ecommerce.shared.error.ApiException;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,16 +31,20 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         this.productMapper = productMapper;
     }
 
-    @Transactional(readOnly = true) @Override public ProductPageResponse search(String query, String category, int limit, String cursor) {
+    @Transactional(readOnly = true)
+    @Override
+    public ProductPageResponse search(String query, String category, int limit, String cursor) {
         SearchCursor decodedCursor = decode(cursor);
         String normalizedQuery = normalize(query);
         String normalizedCategory = normalize(category);
-        List<Product> fetched = productRepository.search(
-                normalizedQuery == null ? null : escapeLike(normalizedQuery),
-                normalizedCategory,
-                decodedCursor == null ? null : decodedCursor.name(),
-                decodedCursor == null ? null : decodedCursor.id(),
-                limit + 1
+        List<Product> fetched = productRepository.findBy(
+                ProductSpecifications.catalogSearch(
+                        normalizedQuery == null ? null : escapeLike(normalizedQuery),
+                        normalizedCategory,
+                        decodedCursor == null ? null : decodedCursor.name(),
+                        decodedCursor == null ? null : decodedCursor.id()
+                ),
+                queryResult -> queryResult.limit(limit + 1).all()
         );
         boolean hasMore = fetched.size() > limit;
         List<Product> page = hasMore ? new ArrayList<>(fetched.subList(0, limit)) : fetched;
@@ -46,7 +53,9 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         return new ProductPageResponse(items, nextCursor, hasMore);
     }
 
-    @Transactional(readOnly = true) @Override public List<String> categories() {
+    @Transactional(readOnly = true)
+    @Override
+    public List<String> categories() {
         return productRepository.findActiveCategories().stream()
                 .collect(java.util.stream.Collectors.toMap(
                         value -> value.toLowerCase(Locale.ROOT),

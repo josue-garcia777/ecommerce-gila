@@ -3,11 +3,12 @@ package com.josue.ecommerce.product.service.impl;
 import com.josue.ecommerce.product.domain.Product;
 import com.josue.ecommerce.product.domain.ProductCategory;
 import com.josue.ecommerce.product.domain.Sku;
-import com.josue.ecommerce.product.dto.CreateProductRequest;
+import com.josue.ecommerce.product.dto.CreateProduct;
 import com.josue.ecommerce.product.dto.ProductResponse;
-import com.josue.ecommerce.product.dto.UpdateProductRequest;
+import com.josue.ecommerce.product.dto.UpdateProduct;
 import com.josue.ecommerce.product.mapper.ProductMapper;
 import com.josue.ecommerce.product.repository.ProductRepository;
+import com.josue.ecommerce.product.repository.specification.ProductSpecifications;
 import com.josue.ecommerce.product.service.ProductService;
 import com.josue.ecommerce.shared.ValueObjects.Money;
 import com.josue.ecommerce.shared.error.ApiException;
@@ -31,10 +32,10 @@ public class ProductServiceImpl implements ProductService {
         this.productMapper = productMapper;
     }
 
-    @Transactional @Override public ProductResponse create(CreateProductRequest request) {
+    @Transactional @Override public ProductResponse create(CreateProduct request) {
         Sku sku = new Sku(request.sku());
 
-        if (productRepository.findByNormalizedSku(sku.value()).isPresent()) {
+        if (productRepository.exists(ProductSpecifications.hasNormalizedSku(sku.value()))) {
             throw new BadRequestException(HttpStatus.CONFLICT, "Duplicate SKU", "A product with this SKU already exists");
         }
 
@@ -48,7 +49,7 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toResponse(findActive(productId));
     }
 
-    @Transactional @Override public ProductResponse update(UUID productId, UpdateProductRequest request) {
+    @Transactional @Override public ProductResponse update(UUID productId, UpdateProduct request) {
         Product product = findActive(productId);
         if (product.getVersion() != request.version()) {
             throw new ApiException(HttpStatus.CONFLICT, "Concurrent update conflict",
@@ -74,13 +75,10 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private Product findActive(UUID productId) {
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findOne(
+                        ProductSpecifications.hasId(productId).and(ProductSpecifications.isActive()))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Product not found",
                         "No product exists with the supplied ID"));
-        if (!product.isActive()) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Product not found",
-                    "No product exists with the supplied ID");
-        }
         return product;
     }
 }

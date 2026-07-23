@@ -8,6 +8,7 @@ import com.josue.ecommerce.importing.dto.RejectedRowResponse;
 import com.josue.ecommerce.importing.repository.ImportMetadata;
 import com.josue.ecommerce.importing.repository.ProductImportErrorRepository;
 import com.josue.ecommerce.importing.repository.ProductImportRepository;
+import com.josue.ecommerce.importing.repository.specification.ProductImportErrorSpecifications;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,6 +17,7 @@ import com.josue.ecommerce.importing.service.ProductImportService;
 import com.josue.ecommerce.importing.service.cmd.ImportWorkItem;
 import com.josue.ecommerce.shared.error.NotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -54,7 +56,8 @@ public class ProductImportServiceImpl implements ProductImportService {
         boolean completedWithRows = metadata.getStatus() == ImportStatus.COMPLETED_WITH_ERRORS;
 
         List<RejectedRowResponse> rejectedRows = completedWithRows
-                ? errorRepository.findAllByImportIdOrderByRowNumber(importId).stream()
+                ? errorRepository.findAll(
+                          ProductImportErrorSpecifications.forImport(importId), Sort.by("rowNumber")).stream()
                   .map(error -> new RejectedRowResponse(
                           error.getRowNumber(), error.getSku(), error.getReason()))
                   .toList()

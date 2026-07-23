@@ -4,6 +4,7 @@ import com.josue.ecommerce.product.domain.Product;
 import com.josue.ecommerce.product.domain.ProductCategory;
 import com.josue.ecommerce.product.domain.Sku;
 import com.josue.ecommerce.product.repository.ProductRepository;
+import com.josue.ecommerce.product.repository.specification.ProductSpecifications;
 import com.josue.ecommerce.product.service.ProductImportUpsertService;
 import com.josue.ecommerce.product.service.cmd.ProductImportCommand;
 import com.josue.ecommerce.product.service.cmd.ProductImportResult;
@@ -35,8 +36,9 @@ public class ProductImportUpsertServiceImpl implements ProductImportUpsertServic
             return new ProductImportResult(0, 0);
         }
 
-        Map<String, Product> existing = productRepository.findAllByNormalizedSkuIn(
-                        commands.stream().map(ProductImportCommand::sku).toList())
+        Map<String, Product> existing = productRepository.findAll(
+                        ProductSpecifications.hasNormalizedSkuIn(
+                                commands.stream().map(ProductImportCommand::sku).toList()))
                 .stream()
                 .collect(Collectors.toMap(product -> product.getSku().value(), Function.identity()));
 

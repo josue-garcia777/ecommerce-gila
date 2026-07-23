@@ -5,5 +5,5 @@ import java.util.Map;
 import java.util.UUID;
 
 public interface InventoryService {
-    Map<UUID, ProductDetails> decrementAllAndLoad(Map<UUID, Integer> quantitiesByProductId);
+    Map<UUID, ProductDetails> decrementInventoryAndLoad(Map<UUID, Integer> quantitiesByProductId);
 }
