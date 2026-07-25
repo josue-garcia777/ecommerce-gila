@@ -1,5 +1,5 @@
-import type { Product } from '../types'
-import { MoneyText } from './MoneyText'
+import type { Product } from '../../types'
+import { MoneyText } from '../MoneyText'
 
 type ProductCardProps = {
   product: Product

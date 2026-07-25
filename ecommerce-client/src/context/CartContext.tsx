@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useAuth } from '../hooks/useAuth'
 import { cartService } from '../services/cartService'
 import { ApiError, errorMessage } from '../services/httpClient'
 import type { Cart, Order } from '../types'
@@ -44,7 +45,7 @@ const loadOrCreateActiveCart = async (): Promise<Cart> => {
     }
   } catch (error) {
     if (!isNotFound(error)) {
-      console.error('Unknow error happened loading the Cart', error);
+      console.error('Unknow error happened loading the Cart', error)
       throw error
     }
   }
@@ -65,6 +66,7 @@ export const useCart = (): CartContextValue => {
 }
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated, user } = useAuth()
   const [cart, setCart] = useState<Cart | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -179,20 +181,36 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      const storedCartId = localStorage.getItem(cartStorageKey)
+      localStorage.removeItem(cartStorageKey)
+
+      if (storedCartId) {
+        removeCheckoutFromStorage(storedCartId)
+      }
+
+      setCart(null)
+      setError(null)
+      setIsLoading(false)
+    }
+
     const initializeCart = async (): Promise<void> => {
+      setIsLoading(true)
+
       try {
         const activeCart = await loadOrCreateActiveCart()
+
         setError(null)
         loadCartFromLocalStorage(activeCart)
       } catch (error) {
         setError(errorMessage(error))
       } finally {
-        setIsLoading(false)
+          setIsLoading(false)
       }
     }
 
     initializeCart()
-  }, [])
+  }, [isAuthenticated, user?.id])
 
   const itemCount = cart?.items.reduce((total, item) => total + item.quantity, 0) ?? 0
 

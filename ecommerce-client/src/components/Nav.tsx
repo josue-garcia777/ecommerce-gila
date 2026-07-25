@@ -1,4 +1,5 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../context/CartContext'
 
 const navigationClassName = ({ isActive }: { isActive: boolean }) =>
@@ -10,6 +11,7 @@ const navigationClassName = ({ isActive }: { isActive: boolean }) =>
 
 export const Nav = () => {
   const { itemCount } = useCart()
+  const { isAdmin, isAuthenticated, logout, user } = useAuth()
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -30,26 +32,52 @@ export const Nav = () => {
           <NavLink to="/" end className={navigationClassName}>
             Store
           </NavLink>
-          <NavLink to="/products" className={navigationClassName}>
-            Products
-          </NavLink>
-          <NavLink to="/imports" className={navigationClassName}>
-            Import
-          </NavLink>
-          <NavLink to="/orders" className={navigationClassName}>
-            Orders
-          </NavLink>
-          <NavLink
-            to="/cart"
-            className={({ isActive }) =>
-              `ml-2 rounded-full bg-moss px-3.5 py-2.5 text-sm text-white no-underline transition-colors hover:bg-moss-dark max-[760px]:px-2.5 max-[760px]:py-2 max-[760px]:text-xs ${isActive ? 'bg-moss-dark' : ''}`
-            }
-          >
-            Cart{' '}
-            <span className="ml-1.5 inline-grid h-[21px] min-w-[21px] place-items-center rounded-full bg-lime px-1 text-xs font-bold text-ink">
-              {itemCount}
-            </span>
-          </NavLink>
+          {isAdmin && (
+            <>
+              <NavLink to="/products" className={navigationClassName}>
+                Admin
+              </NavLink>
+              <NavLink to="/imports" className={navigationClassName}>
+                Import
+              </NavLink>
+            </>
+          )}
+          {isAuthenticated ? (
+            <>
+              <NavLink to="/orders" className={navigationClassName}>
+                Orders
+              </NavLink>
+              <NavLink
+                to="/cart"
+                className={({ isActive }) =>
+                  `ml-2 rounded-full bg-moss px-3.5 py-2.5 text-sm text-white no-underline transition-colors hover:bg-moss-dark max-[760px]:px-2.5 max-[760px]:py-2 max-[760px]:text-xs ${isActive ? 'bg-moss-dark' : ''}`
+                }
+              >
+                Cart{' '}
+                <span className="ml-1.5 inline-grid h-[21px] min-w-[21px] place-items-center rounded-full bg-lime px-1 text-xs font-bold text-ink">
+                  {itemCount}
+                </span>
+              </NavLink>
+              <button
+                type="button"
+                className={navigationClassName({ isActive: false })}
+                onClick={logout}
+                title={user?.email}
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/login" className={navigationClassName}>
+                Login
+              </NavLink>
+              
+              <NavLink to="/login" className={navigationClassName}>
+                Go to Admin Panel
+              </NavLink>
+            </>
+          )}
         </nav>
       </header>
 

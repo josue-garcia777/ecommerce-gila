@@ -1,3 +1,5 @@
+import { getAccessToken } from './authSession'
+
 type ProblemDetail = {
   title?: string
   detail?: string
@@ -15,8 +17,19 @@ export class ApiError extends Error {
   }
 }
 
-export const request = async <T>(url: string, init?: RequestInit, abort? : AbortSignal): Promise<T> => {
-  const response = await fetch(url, {...init, ...(abort ? {abort} : {}) })
+export const request = async <T>(
+  url: string,
+  init?: RequestInit,
+  signal?: AbortSignal,
+): Promise<T> => {
+  const headers = new Headers(init?.headers)
+  const accessToken = getAccessToken()
+
+  if (accessToken && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${accessToken}`)
+  }
+
+  const response = await fetch(url, { ...init, headers, signal })
   if (!response.ok) {
     let problem: ProblemDetail = {}
     try {

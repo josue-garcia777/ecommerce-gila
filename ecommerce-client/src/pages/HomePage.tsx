@@ -1,18 +1,27 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { errorMessage } from '../services/httpClient'
 import { CatalogFilters } from '../components/CatalogFilters'
 import { Message } from '../components/Message'
-import { ProductCard } from '../components/ProductCard'
+import { ProductCard } from '../components/product/ProductCard'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../hooks/useAuth'
 import { useProductList } from '../hooks/useProductCatalog'
 
 const HomePage = () => {
   const { addItem } = useCart()
+  const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
   const catalog = useProductList()
   const [adding, setAdding] = useState<string | null>(null)
   const [addedNote, setAddedNote] = useState<string | null>(null)
 
   const add = async (productId: string) => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: '/' } })
+      return
+    }
+
     try {
       setAdding(productId)
       setAddedNote(null)
@@ -28,7 +37,11 @@ const HomePage = () => {
   return (
     <section className="mx-[clamp(20px,5vw,72px)] my-14 max-[500px]:mx-3.5">
       {addedNote && (
-        <button className="toast" onClick={() => setAddedNote(null)} aria-label="Dismiss notification">
+        <button
+          className="toast"
+          onClick={() => setAddedNote(null)}
+          aria-label="Dismiss notification"
+        >
           {addedNote}
         </button>
       )}
