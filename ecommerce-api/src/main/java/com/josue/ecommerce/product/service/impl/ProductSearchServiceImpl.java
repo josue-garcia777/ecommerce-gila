@@ -16,9 +16,12 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.josue.ecommerce.shared.error.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import static java.util.stream.Collectors.toMap;
 
 @Service
 public class ProductSearchServiceImpl implements ProductSearchService, ProductQueryService {
@@ -33,37 +36,34 @@ public class ProductSearchServiceImpl implements ProductSearchService, ProductQu
 
     @Transactional(readOnly = true)
     @Override
-    public ProductPageResponse search(String query, String category, int limit, String cursor) {
-        SearchCursor decodedCursor = decode(cursor);
-        String normalizedQuery = normalize(query);
-        String normalizedCategory = normalize(category);
-        List<Product> fetched = productRepository.findBy(
+    public ProductPageResponse search(String query, String category, int limit, String cursorStr) {
+        SearchCursor cursor = decode(cursorStr);
+
+        String search = normalizeAndEscapeQuery(query);
+        String cat = normalize(category);
+        String cursorName = cursor == null ? null : cursor.name();
+        UUID cursorId = cursor == null ? null : cursor.id();
+
+        List<Product> products = productRepository.findBy(
                 ProductSpecifications.catalogSearch(
-                        normalizedQuery == null ? null : escapeLike(normalizedQuery),
-                        normalizedCategory,
-                        decodedCursor == null ? null : decodedCursor.name(),
-                        decodedCursor == null ? null : decodedCursor.id()
+                        search,
+                        cat,
+                        cursorName,
+                        cursorId
                 ),
                 queryResult -> queryResult.limit(limit + 1).all()
         );
-        boolean hasMore = fetched.size() > limit;
-        List<Product> page = hasMore ? new ArrayList<>(fetched.subList(0, limit)) : fetched;
-        List<ProductResponse> items = page.stream().map(productMapper::toResponse).toList();
-        String nextCursor = hasMore && !page.isEmpty() ? encode(page.get(page.size() - 1)) : null;
-        return new ProductPageResponse(items, nextCursor, hasMore);
+
+        return toPageResponse(products, limit);
     }
 
     @Transactional(readOnly = true)
     @Override
     public List<String> categories() {
-        return productRepository.findActiveCategories().stream()
-                .collect(java.util.stream.Collectors.toMap(
-                        value -> value.toLowerCase(Locale.ROOT),
-                        value -> value,
-                        (first, second) -> first,
-                        java.util.TreeMap::new
-                ))
-                .values().stream().toList();
+        TreeSet<String> categories = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+
+        categories.addAll(productRepository.findActiveCategories());
+        return categories.stream().toList();
     }
 
     @Transactional(readOnly = true)
@@ -74,14 +74,46 @@ public class ProductSearchServiceImpl implements ProductSearchService, ProductQu
         }
         return productRepository.findAll(ProductSpecifications.hasIdIn(productIds)).stream()
                 .map(this::details)
-                .collect(Collectors.toMap(ProductDetails::id, Function.identity()));
+                .collect(toMap(ProductDetails::id, Function.identity()));
     }
+
+    private ProductPageResponse toPageResponse(
+            List<Product> fetchedProducts,
+            int limit
+    ) {
+        boolean hasMore = fetchedProducts.size() > limit;
+
+        List<Product> page = fetchedProducts.stream()
+                .limit(limit)
+                .toList();
+
+        List<ProductResponse> items = page.stream()
+                .map(productMapper::toResponse)
+                .toList();
+
+        String nextCursor = hasMore
+                ? encode(page.getLast())
+                : null;
+
+        return new ProductPageResponse(items, nextCursor, hasMore);
+    }
+
+    private String normalizeAndEscapeQuery(String query) {
+        String normalizedQuery = normalize(query);
+
+        if (normalizedQuery == null) {
+            return null;
+        }
+
+        return escapeLike(normalizedQuery);
+    }
+
 
     private String normalize(String value) {
         if (value == null || value.isBlank()) {
             return null;
         }
-        return value.trim().toLowerCase(Locale.ROOT);
+        return value.trim().toLowerCase();
     }
 
     private String escapeLike(String value) {
@@ -89,7 +121,8 @@ public class ProductSearchServiceImpl implements ProductSearchService, ProductQu
     }
 
     private String encode(Product product) {
-        String value = product.getName().toLowerCase(Locale.ROOT) + "\n" + product.getId();
+        String value = product.getName().toLowerCase() + "\n" + product.getId();
+
         return Base64.getUrlEncoder().withoutPadding().encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -97,16 +130,21 @@ public class ProductSearchServiceImpl implements ProductSearchService, ProductQu
         if (cursor == null || cursor.isBlank()) {
             return null;
         }
+
         try {
             String decoded = new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8);
+
             int separator = decoded.lastIndexOf('\n');
+
             if (separator <= 0 || separator == decoded.length() - 1) {
-                throw new IllegalArgumentException();
+                throw new BadRequestException(HttpStatus.BAD_REQUEST, "Invalid Cursor sent", "The provided coded cursor is invalid");
             }
+
             return new SearchCursor(decoded.substring(0, separator), UUID.fromString(decoded.substring(separator + 1)));
+
         } catch (IllegalArgumentException exception) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid cursor",
-                    "The product cursor is malformed or expired");
+                    "The product cursor is malformed");
         }
     }
 
