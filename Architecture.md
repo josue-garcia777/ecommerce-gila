@@ -1,4 +1,4 @@
-## Ecommerce
+# Ecommerce Design
 
 ## Functional Req:
     - Create, update, retrieve and delete products
@@ -20,13 +20,15 @@
 - Reusing an idempotency key returns the same order
 - Each user has at most one active cart
 - Order items preserve Snapshots (product information and price used at checkout)
+- Inventory updates are performed atomically in the database
+
 
 ## Performance
 - CSV processing does not block the HTTP request thread
 - Product search uses cursor-based pagination
-- Inventory updates are performed atomically in the database
 
-## Entities
+
+# Entities
 
 ### Core Entities
     - Product:
@@ -90,6 +92,7 @@
         - demoPrincipalUserId -> fixed Id ( in a real system we will use a UserPrincipal details for this.)
 
 ### Database Contraints
+```
 products.sku
     UNIQUE
 
@@ -101,6 +104,7 @@ orders(user_id, idempotency_key)
 
 orders.cart_id
     UNIQUE
+```
 
 ### Value Objects
     - Money
@@ -113,7 +117,7 @@ orders.cart_id
 ### Products:
 
 ```
-GET /products?q={name}&category={category}&limit={20}&cursor={nextCursor} | search products
+GET /products?q={name}&category={category}&limit={20}&cursor={nextCursor=base64(lastname|lastproductId)} | search products
 
 POST /products
 body: CreateProduct | Create a product request
