@@ -85,6 +85,7 @@ const CartPage = () => {
           </Link>
         </div>
       )}
+
       {cart && cart.items.length > 0 && (
         <div className="cart-layout">
           <div className="cart-items">

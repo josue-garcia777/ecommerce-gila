@@ -5,6 +5,7 @@ import { MoneyText } from '../components/MoneyText'
 import { errorMessage } from '../services/httpClient'
 import { orderService } from '../services/orderService'
 import type { Order } from '../types'
+import { OrderSummary } from '../components/order/OrderDetail'
 
 type ConfirmationLocationState = {
   order?: Order
@@ -89,27 +90,8 @@ useEffect(() => {
               {order.paymentReference}
             </span>
           </div>
-          <div className="confirmation-items">
-            {order.items.map((item) => (
-              <div key={item.productId}>
-                <span>
-                  {item.productName}
-                  <small>
-                    {item.sku} · Qty {item.quantity}
-                  </small>
-                </span>
-                <strong>
-                  <MoneyText money={item.lineTotal} />
-                </strong>
-              </div>
-            ))}
-          </div>
-          <div className="confirmation-total">
-            <span>Total paid</span>
-            <strong>
-              <MoneyText money={order.total} />
-            </strong>
-          </div>
+          <OrderSummary order={order} />
+          
           <Link className="primary inline-block" to="/">
             Continue shopping
           </Link>

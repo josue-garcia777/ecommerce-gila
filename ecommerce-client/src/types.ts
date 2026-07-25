@@ -3,6 +3,31 @@ export type Money = {
   currency: string
 }
 
+export type UserRole = 'CUSTOMER' | 'ADMIN'
+
+export type Address = {
+  line1: string
+  line2: string | null
+  city: string
+  state: string | null
+  postalCode: string
+  countryCode: string
+}
+
+export type CurrentUser = {
+  id: string
+  email: string
+  roles: UserRole[]
+  address: Address | null
+}
+
+export type AuthSession = {
+  accessToken: string
+  tokenType: string
+  expiresAt: string
+  user: CurrentUser
+}
+
 export type Product = {
   id: string
   sku: string
@@ -95,7 +120,15 @@ export type Order = {
   total: Money
   paymentReference: string
   createdAt: string
+  address: Address
   items: OrderItem[]
 }
 
-export type OrderSummary = Omit<Order, 'paymentReference' | 'items'>
+export type OrderSummary = Omit<Order, 'paymentReference' | 'address' | 'items'>
+
+export type Credentials = {
+  email: string
+  password: string
+}
+
+export type RegisterRequest = Credentials &  { address: Address }
