@@ -1,0 +1,22 @@
+name,sku,description,category,price,stock,weight_kg
+Adjustable Desk Lamp,TEST-LAMP-001,A dimmable LED lamp for a desk,Home Office,49.99,25,1.250
+Zero Stock Notebook,TEST-ZERO-001,A valid item that starts with zero stock,Stationery,0,0,0
+Robert'); DROP TABLE products;--,TEST-SAFE-001,SQL-looking text is valid product content,Security,12.50,5,0.750
+CSV Update Candidate,TEST-UPDATE-001,Upload this same file twice to verify UPDATED,Testing,18.00,8,0.400
+,TEST-NAME-REQUIRED,Description is present,Testing,10.00,1,0.100
+Missing SKU,,Description is present,Testing,10.00,1,0.100
+Missing Description,TEST-DESCRIPTION-REQUIRED,,Testing,10.00,1,0.100
+Missing Category,TEST-CATEGORY-REQUIRED,Description is present,,10.00,1,0.100
+Text Price,TEST-PRICE-TEXT,Price uses a currency symbol,Testing,$19.99,1,0.100
+Negative Price,TEST-PRICE-NEGATIVE,Price is negative,Testing,-1.00,1,0.100
+Over Precise Price,TEST-PRICE-SCALE,Price has three decimal places,Testing,12.999,1,0.100
+Decimal Stock,TEST-STOCK-DECIMAL,Stock is not an integer,Testing,10.00,1.5,0.100
+Negative Stock,TEST-STOCK-NEGATIVE,Stock is negative,Testing,10.00,-1,0.100
+Out Of Range Stock,TEST-STOCK-RANGE,Stock exceeds a 32-bit integer,Testing,10.00,999999999999999999999,0.100
+Text Weight,TEST-WEIGHT-TEXT,Weight is not a decimal,Testing,10.00,1,heavy
+Negative Weight,TEST-WEIGHT-NEGATIVE,Weight is negative,Testing,10.00,1,-0.100
+Over Precise Weight,TEST-WEIGHT-SCALE,Weight has four decimal places,Testing,10.00,1,1.2345
+Duplicate SKU One,test-duplicate-001,Both normalized duplicate rows must fail,Testing,10.00,1,0.100
+Duplicate SKU Two,TEST-DUPLICATE-001,Both normalized duplicate rows must fail,Testing,10.00,1,0.100
+,TEST-MULTIPLE-ERRORS,,,-10.999,one,-2.1234
+
