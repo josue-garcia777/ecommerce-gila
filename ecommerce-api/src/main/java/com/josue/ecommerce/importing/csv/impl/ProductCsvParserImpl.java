@@ -32,7 +32,7 @@ public class ProductCsvParserImpl implements ProductCsvParser {
         for (RawRow row : rows) {
             String normalizedSku = normalizeSku(row.sku());
             if (normalizedSku != null) {
-                skuCounts.merge(normalizedSku, 1, Integer::sum);
+                skuCounts.put(normalizedSku, skuCounts.getOrDefault(normalizedSku, 0) + 1);
             }
         }
 
@@ -49,8 +49,8 @@ public class ProductCsvParserImpl implements ProductCsvParser {
             Validation validation = validate(row, normalizedSku);
 
             if (!validation.errors().isEmpty()) {
-                rejected.add(new RejectedCsvRow(row.rowNumber(), normalizedSku,
-                        String.join("; ", validation.errors())));
+                rejected.add(
+                        new RejectedCsvRow(row.rowNumber(), normalizedSku, String.join("; ", validation.errors())));
             } else {
                 accepted.add(new ProductImportCommand(
                         normalizedSku,
@@ -107,7 +107,7 @@ public class ProductCsvParserImpl implements ProductCsvParser {
 
         required(row.name(), "Name", 200, errors);
 
-        required(row.sku(), "SKU", 64, errors);
+        required(normalizedSku, "SKU", 64, errors);
 
         required(row.description(), "Description", 2000, errors);
 
@@ -118,10 +118,6 @@ public class ProductCsvParserImpl implements ProductCsvParser {
         Integer stock = integer(row.stock(), errors);
 
         BigDecimal weight = decimal(row.weightKg(), "Weight", 3, 7, errors);
-
-        if (normalizedSku != null && errors.stream().noneMatch(e -> e.startsWith("SKU"))) {
-            errors.add("SKU must not exceed 64 characters");
-        }
 
         return new Validation(errors, price, stock, weight);
     }
