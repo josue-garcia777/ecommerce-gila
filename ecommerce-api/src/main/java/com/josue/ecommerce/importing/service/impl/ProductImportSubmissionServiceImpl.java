@@ -1,6 +1,6 @@
 package com.josue.ecommerce.importing.service.impl;
 
-import com.josue.ecommerce.importing.csv.CsvHeaderValidator;
+import com.josue.ecommerce.importing.csv.impl.CsvHeaderValidator;
 import com.josue.ecommerce.importing.domain.ProductImport;
 import com.josue.ecommerce.importing.dto.ImportSubmissionResponse;
 import com.josue.ecommerce.importing.event.ProductImportSubmitted;
@@ -39,7 +39,7 @@ public class ProductImportSubmissionServiceImpl implements ProductImportSubmissi
 
     @Transactional
     @Override
-    public ImportSubmissionResponse validateAndSubmitProducts(MultipartFile file) {
+    public ImportSubmissionResponse validateAndSubmitFile(MultipartFile file) {
         validateFile(file);
 
         byte[] content = content(file);

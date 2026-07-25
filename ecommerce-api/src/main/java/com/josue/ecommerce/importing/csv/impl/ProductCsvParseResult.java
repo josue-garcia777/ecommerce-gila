@@ -1,4 +1,4 @@
-package com.josue.ecommerce.importing.csv;
+package com.josue.ecommerce.importing.csv.impl;
 
 import com.josue.ecommerce.product.service.cmd.ProductImportCommand;
 import java.util.List;

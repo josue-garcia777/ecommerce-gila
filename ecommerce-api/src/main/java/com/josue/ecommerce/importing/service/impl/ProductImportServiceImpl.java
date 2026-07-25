@@ -1,6 +1,6 @@
 package com.josue.ecommerce.importing.service.impl;
 
-import com.josue.ecommerce.importing.csv.ProductCsvParseResult;
+import com.josue.ecommerce.importing.csv.impl.ProductCsvParseResult;
 import com.josue.ecommerce.importing.domain.ImportStatus;
 import com.josue.ecommerce.importing.domain.ProductImport;
 import com.josue.ecommerce.importing.domain.ProductImportError;

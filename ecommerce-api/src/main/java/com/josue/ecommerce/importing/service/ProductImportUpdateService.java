@@ -1,6 +1,6 @@
 package com.josue.ecommerce.importing.service;
 
-import com.josue.ecommerce.importing.csv.ProductCsvParseResult;
+import com.josue.ecommerce.importing.csv.impl.ProductCsvParseResult;
 
 import java.util.UUID;
 

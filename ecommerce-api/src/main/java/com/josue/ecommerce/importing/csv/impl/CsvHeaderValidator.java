@@ -1,4 +1,4 @@
-package com.josue.ecommerce.importing.csv;
+package com.josue.ecommerce.importing.csv.impl;
 
 import com.josue.ecommerce.shared.error.ApiException;
 import java.io.ByteArrayInputStream;
@@ -24,11 +24,14 @@ public class CsvHeaderValidator {
     public void validate(byte[] content) {
         try (InputStreamReader reader = reader(content);
              CSVParser parser = format().parse(reader)) {
+
             if (!parser.getHeaderNames().equals(EXPECTED_HEADERS)) {
                 throw invalidHeaders();
             }
+
         } catch (ApiException exception) {
             throw exception;
+
         } catch (IOException | RuntimeException exception) {
             throw new BadRequestException(HttpStatus.UNPROCESSABLE_CONTENT, "Invalid CSV structure",
                     "The file must be valid UTF-8 CSV with the exact required headers");

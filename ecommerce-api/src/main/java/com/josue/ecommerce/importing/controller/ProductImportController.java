@@ -32,7 +32,7 @@ public class ProductImportController {
 
     @PostMapping
     ResponseEntity<ImportSubmissionResponse> submit(@RequestPart("file") MultipartFile file) {
-        ImportSubmissionResponse response = submissionService.validateAndSubmitProducts(file);
+        ImportSubmissionResponse response = submissionService.validateAndSubmitFile(file);
         return ResponseEntity.accepted()
                 .location(URI.create(response.statusUrl()))
                 .body(response);
