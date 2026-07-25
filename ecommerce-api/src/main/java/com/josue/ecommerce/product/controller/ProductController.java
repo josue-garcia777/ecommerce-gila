@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,23 +48,26 @@ public class ProductController {
         return productSearchService.search(q, category, limit, cursor);
     }
 
-    @PostMapping("/products")
-    ResponseEntity<ProductResponse> create(@Valid @RequestBody CreateProduct request) {
-        ProductResponse response = productService.createProduct(request);
-        return ResponseEntity.created(URI.create("/api/v1/products/" + response.id())).body(response);
-    }
-
     @GetMapping("/products/{productId}")
     ProductResponse get(@PathVariable UUID productId) {
         return productService.getProduct(productId);
     }
 
+    @PostMapping("/products")
+    @PreAuthorize("hasRole('ADMIN')")
+    ResponseEntity<ProductResponse> create(@Valid @RequestBody CreateProduct request) {
+        ProductResponse response = productService.createProduct(request);
+        return ResponseEntity.created(URI.create("/api/v1/products/" + response.id())).body(response);
+    }
+
     @PutMapping("/products/{productId}")
+    @PreAuthorize("hasRole('ADMIN')")
     ProductResponse update(@PathVariable UUID productId, @Valid @RequestBody UpdateProduct request) {
         return productService.updateProduct(productId, request);
     }
 
     @DeleteMapping("/products/{productId}")
+    @PreAuthorize("hasRole('ADMIN')")
     ResponseEntity<Void> delete(@PathVariable UUID productId) {
         productService.deleteProduct(productId);
         return ResponseEntity.noContent().build();

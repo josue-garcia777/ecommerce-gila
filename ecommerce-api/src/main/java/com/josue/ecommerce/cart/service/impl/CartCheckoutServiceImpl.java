@@ -2,6 +2,7 @@ package com.josue.ecommerce.cart.service.impl;
 
 import com.josue.ecommerce.cart.domain.Cart;
 import com.josue.ecommerce.cart.repository.CartRepository;
+import com.josue.ecommerce.cart.repository.specification.CartSpecifications;
 import com.josue.ecommerce.cart.service.CartCheckoutService;
 import com.josue.ecommerce.cart.service.cmd.CheckoutCart;
 import com.josue.ecommerce.cart.service.cmd.CheckoutCartItem;
@@ -27,13 +28,14 @@ public class CartCheckoutServiceImpl implements CartCheckoutService {
     @Transactional(propagation = Propagation.MANDATORY)
     @Override
     public Cart checkoutCartForUser(UUID cartId, UUID userId) {
-        return cartRepository.findByIdAndUserId(cartId, userId)
+        return cartRepository.findOne(CartSpecifications.hasIdAndUser(cartId, userId)
+                        .and(CartSpecifications.fetchItems()))
                 .orElseThrow(this::notFound);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     @Override
-    public void claimForCheckout(Cart cart, Instant now) {
+    public void beginCheckout(Cart cart, Instant now) {
         cart.beginCheckout(now);
         cartRepository.flush();
     }

@@ -34,6 +34,16 @@ management:
         enabled: true
 
 app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:xs4FPEf0qOu/5XLNZz/TdsN/sYUsOTgitDKJ6PKM1PM=}
+      issuer: ecommerce-api
+      audience: ecommerce-client
+      access-token-ttl: PT15M
+  identity:
+    bootstrap-admin:
+      email: ${BOOTSTRAP_ADMIN_EMAIL:josue@gmail.com}
+      password: ${BOOTSTRAP_ADMIN_PASSWORD:123456789}
   payment:
     fake:
       fail-key: PAYMENT_FAIL

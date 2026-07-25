@@ -13,7 +13,7 @@ public final class CartSpecifications {
 
     public static Specification<Cart> activeForUser(UUID userId) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.and(
-                criteriaBuilder.equal(root.get("userId"), userId),
+                criteriaBuilder.equal(root.get("user").get("id"), userId),
                 criteriaBuilder.equal(root.get("status"), CartStatus.ACTIVE)
         );
     }
@@ -21,7 +21,7 @@ public final class CartSpecifications {
     public static Specification<Cart> hasIdAndUser(UUID cartId, UUID userId) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.and(
                 criteriaBuilder.equal(root.get("id"), cartId),
-                criteriaBuilder.equal(root.get("userId"), userId)
+                criteriaBuilder.equal(root.get("user").get("id"), userId)
         );
     }
 

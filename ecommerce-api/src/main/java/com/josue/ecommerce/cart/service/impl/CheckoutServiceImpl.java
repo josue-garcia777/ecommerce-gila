@@ -8,6 +8,8 @@ import com.josue.ecommerce.cart.service.CheckoutService;
 import com.josue.ecommerce.cart.service.cmd.CheckoutCart;
 import com.josue.ecommerce.cart.service.cmd.CheckoutCartItem;
 import com.josue.ecommerce.identity.CurrentUserProvider;
+import com.josue.ecommerce.identity.domain.User;
+import com.josue.ecommerce.identity.service.UserService;
 import com.josue.ecommerce.order.domain.CustomerOrder;
 import com.josue.ecommerce.order.dto.OrderResponse;
 import com.josue.ecommerce.order.mapper.OrderMapper;
@@ -21,6 +23,7 @@ import com.josue.ecommerce.product.service.InventoryService;
 import com.josue.ecommerce.product.service.cmd.InventoryDecrement;
 import com.josue.ecommerce.product.service.cmd.ProductDetails;
 import com.josue.ecommerce.shared.ValueObjects.Money;
+import com.josue.ecommerce.shared.ValueObjects.Address;
 import com.josue.ecommerce.shared.error.ApiException;
 import com.josue.ecommerce.shared.error.BadRequestException;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +44,7 @@ import java.util.stream.Collectors;
 public class CheckoutServiceImpl implements CheckoutService {
 
     private final CurrentUserProvider currentUserProvider;
+    private final UserService userService;
     private final CartCheckoutService cartCheckoutService;
     private final InventoryService inventoryService;
     private final OrderService orderService;
@@ -54,8 +57,8 @@ public class CheckoutServiceImpl implements CheckoutService {
     @Override
     public OrderResponse checkout(UUID cartId, String idempotencyKey) {
 
-        log.info("Starting Checkout for: {} and {}", cartId, idempotencyKey);
-        UUID userId = currentUserProvider.demoPrincipalUserId();
+        log.info("Starting checkout for cart {}", cartId);
+        UUID userId = currentUserProvider.userPrincipalId();
         String normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
 
         Optional<CustomerOrder> existingOrder = orderService.findByIdempotencyKeyAndUser(normalizedIdempotencyKey, userId);
@@ -72,6 +75,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         if (cart.getStatus() == CartStatus.CHECKED_OUT) {
             return findExistingOrderResponse(cartId, userId);
         }
+
         if (cart.getStatus() != CartStatus.ACTIVE) {
             throw checkoutAlreadyInProgress();
         }
@@ -79,15 +83,17 @@ public class CheckoutServiceImpl implements CheckoutService {
         CheckoutCart checkoutCart = checkoutMapper.toCheckOutCar(cart);
         validateCart(checkoutCart);
 
-        cartCheckoutService.claimForCheckout(cart, Instant.now());
+        User user = userService.getUser(userId);
+        cartCheckoutService.beginCheckout(cart, Instant.now());
 
         Map<UUID, ProductDetails> products = decrementInventoryAndLoadProducts(checkoutCart.items());
         CheckoutSummary summary = checkoutSummaryFactory.create(checkoutCart.items(), products);
 
-        CustomerOrder order = createPendingOrder(cartId, userId, summary.total(), idempotencyKey);
+        CustomerOrder order = createPendingOrder(cartId, user, summary.total(), user.getAddress(), idempotencyKey);
         addOrderItems(order, summary.lines());
 
         CustomerOrder savedOrder = orderService.savePendingOrder(order);
+        orderService.saveOrderItems(savedOrder.getItems());
 
         String paymentReference = authorizePayment(savedOrder.getId(), summary.total(), idempotencyKey);
 
@@ -130,8 +136,9 @@ public class CheckoutServiceImpl implements CheckoutService {
         return inventoryService.decrementInventoryAndLoad(decrementCmd);
     }
 
-    private CustomerOrder createPendingOrder(UUID cartId, UUID userId, Money total, String idempotencyKey) {
-        return new CustomerOrder(cartId, userId, total, idempotencyKey, Instant.now());
+    private CustomerOrder createPendingOrder(UUID cartId, User user, Money total,
+                                             Address address, String idempotencyKey) {
+        return new CustomerOrder(cartId, user, total, address, idempotencyKey, Instant.now());
     }
 
     private String authorizePayment(UUID orderId, Money total, String idempotencyKey) {
@@ -163,9 +170,6 @@ public class CheckoutServiceImpl implements CheckoutService {
         return idempotencyKey.trim();
     }
 
-    /*
-         Errors
-    * */
     private BadRequestException checkedOutCartWithoutOrder() {
         return new BadRequestException(HttpStatus.CONFLICT, "Invalid cart state", "The checked-out cart has no associated order");
     }
