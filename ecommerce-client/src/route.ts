@@ -7,7 +7,7 @@ import CartPage from './pages/CartPage'
 import ImportPage from './pages/ImportPage'
 import OrderConfirmationPage from './pages/OrderConfirmationPage'
 import OrdersPage from './pages/OrdersPage'
-import HomePage from './pages/StorefrontPage'
+import HomePage from './pages/HomePage'
 
 const routes: RouteObject[] = [
   {
