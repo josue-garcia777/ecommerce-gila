@@ -10,6 +10,7 @@ import com.josue.ecommerce.cart.repository.CartRepository;
 import com.josue.ecommerce.cart.repository.specification.CartSpecifications;
 import com.josue.ecommerce.cart.service.CartService;
 import com.josue.ecommerce.identity.CurrentUserProvider;
+import com.josue.ecommerce.identity.service.UserService;
 import com.josue.ecommerce.product.service.cmd.ProductDetails;
 import com.josue.ecommerce.product.service.ProductQueryService;
 import com.josue.ecommerce.shared.error.ApiException;
@@ -34,27 +35,31 @@ public class CartServiceImpl implements CartService {
     private final CartItemRepository cartItemRepository;
     private final ProductQueryService productQueryService;
     private final CurrentUserProvider currentUserProvider;
+    private final UserService userAccountService;
     private final CartMapper cartMapper;
 
     public CartServiceImpl(CartRepository cartRepository, CartItemRepository cartItemRepository,
                            ProductQueryService productQueryService,
                            CurrentUserProvider currentUserProvider,
+                           UserService userAccountService,
                            CartMapper cartMapper) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.productQueryService = productQueryService;
         this.currentUserProvider = currentUserProvider;
+        this.userAccountService = userAccountService;
         this.cartMapper = cartMapper;
     }
 
     @Transactional
     public CartResponse createOrGetActive() {
-        UUID userId = currentUserProvider.demoPrincipalUserId();
+        UUID userId = currentUserProvider.userPrincipalId();
 
         Cart cart = cartRepository.findBy(
                         CartSpecifications.activeForUser(userId).and(CartSpecifications.fetchItems()),
                         query -> query.sortBy(Sort.by(Sort.Direction.DESC, "createdAt")).first())
-                .orElseGet(() -> cartRepository.save(new Cart(userId, Instant.now())));
+                .orElseGet(() -> cartRepository.save(new Cart(
+                        userAccountService.getUser(userId), Instant.now())));
 
         return buildCartResponse(cart);
     }
@@ -104,7 +109,7 @@ public class CartServiceImpl implements CartService {
 
     private Cart findCart(UUID cartId) {
         Specification<Cart> cartWithItems = CartSpecifications
-                .hasIdAndUser(cartId, currentUserProvider.demoPrincipalUserId())
+                .hasIdAndUser(cartId, currentUserProvider.userPrincipalId())
                 .and(CartSpecifications.fetchItems());
 
         return cartRepository.findOne(cartWithItems)

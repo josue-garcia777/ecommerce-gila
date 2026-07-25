@@ -5,6 +5,7 @@ import com.josue.ecommerce.cart.service.CheckoutService;
 
 import java.util.UUID;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/carts/{cartId}/checkout")
+@PreAuthorize("hasRole('CUSTOMER')")
 public class CheckoutController {
 
     private final CheckoutService checkoutService;

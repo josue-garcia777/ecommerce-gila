@@ -24,18 +24,18 @@ public final class OrderSpecifications {
     public static Specification<CustomerOrder> hasIdAndUser(UUID orderId, UUID userId) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.and(
                 criteriaBuilder.equal(root.get("id"), orderId),
-                criteriaBuilder.equal(root.get("userId"), userId)
+                criteriaBuilder.equal(root.get("user").get("id"), userId)
         );
     }
 
     public static Specification<CustomerOrder> hasUser(UUID userId) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.and(
-                criteriaBuilder.equal(root.get("userId"), userId)
+                criteriaBuilder.equal(root.get("user").get("id"), userId)
         );
     }
 
     public static Specification<CustomerOrder> forUser(UUID userId) {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("userId"), userId);
+        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("user").get("id"), userId);
     }
 
     public static Specification<CustomerOrder> fetchItems() {

@@ -1,6 +1,7 @@
 package com.josue.ecommerce.order.service;
 
 import com.josue.ecommerce.order.domain.CustomerOrder;
+import com.josue.ecommerce.order.domain.OrderItem;
 import com.josue.ecommerce.order.dto.OrderResponse;
 import com.josue.ecommerce.order.dto.OrderSummaryResponse;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,9 @@ public interface OrderService {
 
     @Transactional
     CustomerOrder savePendingOrder(CustomerOrder order);
+
+    @Transactional
+    void saveOrderItems(List<OrderItem> orderItems);
 
     @Transactional(readOnly = true)
     Optional<CustomerOrder> findByIdempotencyKeyAndUser(String idempotencyKey, UUID userId);

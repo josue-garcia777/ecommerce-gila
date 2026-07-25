@@ -1,6 +1,8 @@
 package com.josue.ecommerce.order.domain;
 
+import com.josue.ecommerce.identity.domain.User;
 import com.josue.ecommerce.shared.ValueObjects.Money;
+import com.josue.ecommerce.shared.ValueObjects.Address;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -22,8 +24,9 @@ public class CustomerOrder {
     @Column(name = "cart_id", nullable = false, unique = true)
     private UUID cartId;
 
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -47,27 +50,42 @@ public class CustomerOrder {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @Embedded
+    private Address address;
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     @OrderBy("productName ASC")
     private List<OrderItem> items = new ArrayList<>();
 
     protected CustomerOrder() {
     }
 
-    public CustomerOrder(UUID cartId, UUID userId, Money total, String idempotencyKey, Instant createdAt) {
+    public CustomerOrder(UUID cartId, User user, Money total, Address address,
+                         String idempotencyKey, Instant createdAt) {
         if (idempotencyKey == null || idempotencyKey.isBlank() || idempotencyKey.length() > 128) {
             throw new IllegalArgumentException("A valid idempotency key is required");
         }
+        if (user == null) {
+            throw new IllegalArgumentException("User is required");
+        }
+        if (address == null) {
+            throw new IllegalArgumentException("Address is required");
+        }
         this.cartId = cartId;
-        this.userId = userId;
+        this.user = user;
         this.status = OrderStatus.PENDING_PAYMENT;
         this.total = total;
+        this.address = address;
         this.idempotencyKey = idempotencyKey;
         this.createdAt = createdAt;
     }
 
     public List<OrderItem> getItems() {
         return Collections.unmodifiableList(items);
+    }
+
+    public UUID getUserId() {
+        return user.getId();
     }
 
     public void addItem(UUID productId, String sku, String productName, Money unitPrice,

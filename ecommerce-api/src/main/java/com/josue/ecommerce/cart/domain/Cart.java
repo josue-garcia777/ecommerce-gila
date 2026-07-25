@@ -1,5 +1,6 @@
 package com.josue.ecommerce.cart.domain;
 
+import com.josue.ecommerce.identity.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -9,7 +10,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import lombok.Getter;
@@ -30,8 +32,9 @@ public class Cart {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -53,8 +56,11 @@ public class Cart {
     protected Cart() {
     }
 
-    public Cart(UUID userId, Instant now) {
-        this.userId = userId;
+    public Cart(User user, Instant now) {
+        if (user == null) {
+            throw new IllegalArgumentException("User is required");
+        }
+        this.user = user;
         this.status = CartStatus.ACTIVE;
         this.createdAt = now;
         this.updatedAt = now;
@@ -62,6 +68,10 @@ public class Cart {
 
     public List<CartItem> getItems() {
         return Collections.unmodifiableList(items);
+    }
+
+    public UUID getUserId() {
+        return user.getId();
     }
 
     public CartItem setProductQuantity(UUID productId, int quantity) {
