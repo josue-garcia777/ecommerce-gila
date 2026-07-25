@@ -1,83 +1,116 @@
-import { useCallback, useState } from 'react'
-import useSWR from 'swr'
-import useSWRInfinite from 'swr/infinite'
-import { swrKeys } from '../config/swrKeys'
+import { useEffect, useState } from 'react'
 import { errorMessage } from '../services/httpClient'
 import { productService } from '../services/productService'
-import type { ProductPage } from '../types'
+import type { Product } from '../types'
 
-type ProductCatalogOptions = {
+type ProductOptions = {
   limit?: number
 }
 
-type ProductPageKey = ReturnType<typeof swrKeys.productPage>
-
-const fetchProductPage = ([, , query, category, cursor, limit]: ProductPageKey) =>
-  productService.search({ q: query, category, cursor, limit })
-
-export function useProductCatalog({ limit = 20 }: ProductCatalogOptions = {}) {
-  const [query, setQueryValue] = useState('')
+export const useProductList = ({ limit = 20 }: ProductOptions = {}) => {
+  
+  const [query, setQuery] = useState('')
   const [activeQuery, setActiveQuery] = useState('')
-  const [category, setCategoryValue] = useState('')
-  const [localError, setError] = useState<string | null>(null)
+  
+  const [category, setCategory] = useState('')
+  const [categories, setCategories] = useState<string[]>([])
+  
+  const [products, setProducts] = useState<Product[]>([])
+  
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  
+  const [hasMore, setHasMore] = useState(false)
+  
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const categoriesRequest = useSWR(swrKeys.productCategories, productService.listCategories)
+  const loadFirstPage = async (nextQuery: string, nextCategory: string): Promise<void> => {
+    setLoading(true)
 
-  const getPageKey = useCallback(
-    (pageIndex: number, previousPage: ProductPage | null): ProductPageKey | null => {
-      if (previousPage && !previousPage.hasMore) return null
-      const cursor = pageIndex === 0 ? null : (previousPage?.nextCursor ?? null)
-      return swrKeys.productPage(activeQuery, category, cursor, limit)
-    },
-    [activeQuery, category, limit],
-  )
+    try {
+      const [page, availableCategories] = await Promise.all([
+        productService.searchProduct({ q: nextQuery, category: nextCategory, limit }),
+        productService.listCategories(),
+      ])
 
-  const catalogRequest = useSWRInfinite<ProductPage>(getPageKey, fetchProductPage)
-  const products = catalogRequest.data?.flatMap((page) => page.items) ?? []
-  const lastPage = catalogRequest.data?.at(-1)
+      setProducts(page.items)
+      setNextCursor(page.nextCursor)
+      setHasMore(page.hasMore)
+      setCategories(availableCategories)
+      setError(null)
+    } catch (caught) {
+      setError(errorMessage(caught))
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  const setQuery = useCallback((value: string) => {
-    setQueryValue(value)
+  useEffect(() => {
+    loadFirstPage(activeQuery, category)
+  }, [activeQuery, category, limit])
+
+  const updateQuery = (value: string): void => {
+    setQuery(value)
     setError(null)
-  }, [])
+  }
 
-  const search = useCallback(() => {
-    const normalizedQuery = query.trim()
+  const updateCategory = (value: string): void => {
+    setCategory(value)
     setError(null)
-    if (normalizedQuery === activeQuery) {
-      void catalogRequest.setSize(1).then(() => catalogRequest.mutate())
+  }
+
+  const search = async (): Promise<void> => {
+    const nextQuery = query.trim()
+    setError(null)
+
+    if (nextQuery === activeQuery) {
+      await loadFirstPage(nextQuery, category)
       return
     }
-    setActiveQuery(normalizedQuery)
-  }, [activeQuery, catalogRequest, query])
 
-  const setCategory = useCallback((value: string) => {
-    setCategoryValue(value)
-    setError(null)
-  }, [])
+    setActiveQuery(nextQuery)
+  }
 
-  const loadMore = useCallback(() => {
-    if (!lastPage?.hasMore || catalogRequest.isValidating) return
-    void catalogRequest.setSize((size) => size + 1)
-  }, [catalogRequest, lastPage?.hasMore])
+  const loadMore = async (): Promise<void> => {
+    if (loading || !hasMore || !nextCursor) {
+      return
+    }
 
-  const refresh = useCallback(async () => {
-    await catalogRequest.setSize(1)
-    await Promise.all([catalogRequest.mutate(), categoriesRequest.mutate()])
-  }, [catalogRequest, categoriesRequest])
+    setLoading(true)
 
-  const requestError = catalogRequest.error ?? categoriesRequest.error
+    try {
+      const page = await productService.searchProduct({
+        q: activeQuery,
+        category,
+        cursor: nextCursor,
+        limit,
+      })
+
+      setProducts((current) => [...current, ...page.items])
+      setNextCursor(page.nextCursor)
+      setHasMore(page.hasMore)
+      setError(null)
+    } catch (error) {
+      setError(errorMessage(error))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const refresh = async (): Promise<void> => {
+    await loadFirstPage(activeQuery, category)
+  }
 
   return {
     query,
-    setQuery,
+    setQuery: updateQuery,
     category,
-    setCategory,
-    categories: categoriesRequest.data ?? [],
+    setCategory: updateCategory,
+    categories,
     products,
-    hasMore: lastPage?.hasMore ?? false,
-    loading: catalogRequest.isLoading || catalogRequest.isValidating,
-    error: localError ?? (requestError ? errorMessage(requestError) : null),
+    hasMore,
+    loading,
+    error,
     setError,
     search,
     loadMore,

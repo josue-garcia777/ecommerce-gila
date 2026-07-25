@@ -1,6 +1,6 @@
 import type { Money } from '../types'
 
-export function MoneyText({ money }: { money: Money | null }) {
+export const MoneyText = ({ money }: { money: Money | null }) => {
   if (!money) return <span>Multiple currencies</span>
   return (
     <span>

@@ -7,14 +7,14 @@ import CartPage from './pages/CartPage'
 import ImportPage from './pages/ImportPage'
 import OrderConfirmationPage from './pages/OrderConfirmationPage'
 import OrdersPage from './pages/OrdersPage'
-import StorefrontPage from './pages/StorefrontPage'
+import HomePage from './pages/StorefrontPage'
 
 const routes: RouteObject[] = [
   {
     path: '/',
     Component: Nav,
     children: [
-      { index: true, Component: StorefrontPage },
+      { index: true, Component: HomePage },
       { path: 'products', Component: AdminProductsPage },
       { path: 'imports', Component: ImportPage },
       { path: 'cart', Component: CartPage },
@@ -26,6 +26,4 @@ const routes: RouteObject[] = [
   },
 ]
 
-export function AppRoutes() {
-  return useRoutes(routes)
-}
+export const AppRoutes = () => useRoutes(routes)

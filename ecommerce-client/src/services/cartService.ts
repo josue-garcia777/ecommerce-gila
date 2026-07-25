@@ -2,18 +2,24 @@ import type { Cart, Order } from '../types'
 import { jsonRequest, request } from './httpClient'
 
 export const cartService = {
-  createOrGet: () => request<Cart>('/api/v1/carts', { method: 'POST' }),
+  createOrGetCart: async (): Promise<Cart> =>
+    await request<Cart>('/api/v1/carts', { method: 'POST' }),
 
-  get: (cartId: string) => request<Cart>(`/api/v1/carts/${cartId}`),
+  getCart: async (cartId: string): Promise<Cart> => await request<Cart>(`/api/v1/carts/${cartId}`),
 
-  setQuantity: (cartId: string, productId: string, quantity: number) =>
-    request<Cart>(`/api/v1/carts/${cartId}/items/${productId}`, jsonRequest('PUT', { quantity })),
+  setQuantity: async (cartId: string, productId: string, quantity: number): Promise<Cart> =>
+    await request<Cart>(
+      `/api/v1/carts/${cartId}/items/${productId}`,
+      jsonRequest('PUT', { quantity }),
+    ),
 
-  removeItem: (cartId: string, productId: string) =>
-    request<Cart>(`/api/v1/carts/${cartId}/items/${productId}`, { method: 'DELETE' }),
+  removeItem: async (cartId: string, productId: string): Promise<Cart> =>
+    await request<Cart>(`/api/v1/carts/${cartId}/items/${productId}`, {
+      method: 'DELETE',
+    }),
 
-  checkout: (cartId: string, idempotencyKey: string) =>
-    request<Order>(`/api/v1/carts/${cartId}/checkout`, {
+  checkout: async (cartId: string, idempotencyKey: string): Promise<Order> =>
+    await request<Order>(`/api/v1/carts/${cartId}/checkout`, {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey },
     }),

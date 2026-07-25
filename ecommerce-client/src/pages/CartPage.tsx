@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { errorMessage } from '../services/httpClient'
 import { Message } from '../components/Message'
@@ -6,55 +6,60 @@ import { MoneyText } from '../components/MoneyText'
 import { useCart } from '../context/CartContext'
 import type { CartItem } from '../types'
 
-export default function CartPage() {
-  const { cart, isLoading, ensureCart, setQuantity, removeItem, checkout: checkoutCart } = useCart()
+const CartPage = () => {
+  const {
+    cart,
+    isLoading,
+    restoreError,
+    setQuantity,
+    removeItem,
+    checkout: checkoutCart,
+  } = useCart()
   const navigate = useNavigate()
   const [checkoutPending, setCheckoutPending] = useState(false)
   const [updating, setUpdating] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (cart) return
-    void ensureCart().catch((caught) => setError(errorMessage(caught)))
-  }, [cart, ensureCart])
-
   const update = async (item: CartItem, quantity: number) => {
     if (!cart || quantity <= 0) return
+    
     try {
-      setUpdating(item.productId)
-      setError(null)
-      await setQuantity(item.productId, quantity)
+        setUpdating(item.productId)
+        setError(null)
+        await setQuantity(item.productId, quantity)
     } catch (caught) {
-      setError(errorMessage(caught))
+        setError(errorMessage(caught))
     } finally {
-      setUpdating(null)
+        setUpdating(null)
     }
   }
 
   const remove = async (productId: string) => {
     if (!cart) return
+    
     try {
-      setUpdating(productId)
-      setError(null)
-      await removeItem(productId)
+        setUpdating(productId)
+        setError(null)
+        await removeItem(productId)
     } catch (caught) {
-      setError(errorMessage(caught))
+        setError(errorMessage(caught))
     } finally {
-      setUpdating(null)
+        setUpdating(null)
     }
   }
 
   const checkout = async () => {
     if (!cart || checkoutPending) return
+    
     try {
-      setCheckoutPending(true)
-      setError(null)
-      const order = await checkoutCart()
-      navigate(`/orders/${order.id}/confirmation`, { state: { order } })
+        setCheckoutPending(true)
+        setError(null)
+        const order = await checkoutCart()
+        navigate(`/orders/${order.id}/confirmation`, { state: { order } })
     } catch (caught) {
-      setError(errorMessage(caught))
+        setError(errorMessage(caught))
     } finally {
-      setCheckoutPending(false)
+        setCheckoutPending(false)
     }
   }
 
@@ -69,7 +74,7 @@ export default function CartPage() {
           Continue shopping →
         </Link>
       </div>
-      {error && <Message tone="error">{error}</Message>}
+      {(error ?? restoreError) && <Message tone="error">{error ?? restoreError}</Message>}
       {isLoading && <p className="muted">Loading your cart…</p>}
       {!isLoading && cart && cart.items.length === 0 && (
         <div className="empty-state">
@@ -147,3 +152,5 @@ export default function CartPage() {
     </section>
   )
 }
+
+export default CartPage

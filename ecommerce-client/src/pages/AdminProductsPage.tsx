@@ -5,28 +5,30 @@ import { CatalogFilters } from '../components/CatalogFilters'
 import { Message } from '../components/Message'
 import { MoneyText } from '../components/MoneyText'
 import { ProductForm } from '../components/product/ProductForm'
-import { useProductCatalog } from '../hooks/useProductCatalog'
+import { useProductList } from '../hooks/useProductCatalog'
 import type { Product } from '../types'
 
-export default function AdminProductsPage() {
-  const catalog = useProductCatalog({ limit: 50 })
+const AdminProductsPage = () => {
+  const productList = useProductList({ limit: 50 })
   const [editing, setEditing] = useState<Product | null | undefined>(undefined)
   const [success, setSuccess] = useState<string | null>(null)
 
   const saved = async (message: string) => {
     setEditing(undefined)
     setSuccess(message)
-    await catalog.refresh()
+    await productList.refresh()
   }
 
   const remove = async (product: Product) => {
     try {
-      catalog.setError(null)
-      await productService.remove(product.id)
-      setSuccess(`${product.name} was deleted`)
-      await catalog.refresh()
+        
+        productList.setError(null)
+        await productService.removeProduct(product.id)
+        setSuccess(`${product.name} was deleted`)
+        
+        await productList.refresh()
     } catch (caught) {
-      catalog.setError(errorMessage(caught))
+        productList.setError(errorMessage(caught))
     }
   }
 
@@ -44,20 +46,20 @@ export default function AdminProductsPage() {
 
       <CatalogFilters
         className="mb-[22px] max-w-[760px]"
-        query={catalog.query}
-        category={catalog.category}
-        categories={catalog.categories}
-        onQueryChange={catalog.setQuery}
-        onCategoryChange={catalog.setCategory}
-        onSubmit={catalog.search}
+        query={productList.query}
+        category={productList.category}
+        categories={productList.categories}
+        onQueryChange={productList.setQuery}
+        onCategoryChange={productList.setCategory}
+        onSubmit={productList.search}
       />
 
-      {catalog.error && <Message tone="error">{catalog.error}</Message>}
+      {productList.error && <Message tone="error">{productList.error}</Message>}
       {success && <Message tone="success">{success}</Message>}
-      {catalog.loading && catalog.products.length === 0 && (
+      {productList.loading && productList.products.length === 0 && (
         <p className="muted">Loading products…</p>
       )}
-      {!catalog.loading && catalog.products.length === 0 && (
+      {!productList.loading && productList.products.length === 0 && (
         <div className="empty-state">
           <h3>No active products</h3>
           <p>Create one or import the supplied CSV.</p>
@@ -77,7 +79,7 @@ export default function AdminProductsPage() {
             </tr>
           </thead>
           <tbody>
-            {catalog.products.map((product) => (
+            {productList.products.map((product) => (
               <tr key={product.id}>
                 <td>
                   <strong>{product.name}</strong>
@@ -100,11 +102,11 @@ export default function AdminProductsPage() {
           </tbody>
         </table>
       </div>
-      {catalog.hasMore && (
+      {productList.hasMore && (
         <button
           className="secondary load-table"
-          disabled={catalog.loading}
-          onClick={catalog.loadMore}
+          disabled={productList.loading}
+          onClick={productList.loadMore}
         >
           Load more
         </button>
@@ -116,3 +118,5 @@ export default function AdminProductsPage() {
     </section>
   )
 }
+
+export default AdminProductsPage

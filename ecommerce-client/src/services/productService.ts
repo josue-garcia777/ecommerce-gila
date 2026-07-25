@@ -9,22 +9,23 @@ type ProductSearchQuery = {
 }
 
 export const productService = {
-  search(query: ProductSearchQuery = {}) {
+  searchProduct: async (query: ProductSearchQuery = {}): Promise<ProductPage> => {
     const params = new URLSearchParams()
     if (query.q) params.set('q', query.q)
     if (query.category) params.set('category', query.category)
     if (query.cursor) params.set('cursor', query.cursor)
     params.set('limit', String(query.limit ?? 20))
-    return request<ProductPage>(`/api/v1/products?${params}`)
+    return await request<ProductPage>(`/api/v1/products?${params}`)
   },
 
-  listCategories: () => request<string[]>('/api/v1/categories'),
+  listCategories: async (): Promise<string[]> => await request<string[]>('/api/v1/categories'),
 
-  create: (payload: ProductPayload) =>
-    request<Product>('/api/v1/products', jsonRequest('POST', payload)),
+  createProduct: async (payload: ProductPayload): Promise<Product> =>
+    await request<Product>('/api/v1/products', jsonRequest('POST', payload)),
 
-  update: (id: string, payload: ProductPayload) =>
-    request<Product>(`/api/v1/products/${id}`, jsonRequest('PUT', payload)),
+  updateProduct: async (id: string, payload: ProductPayload): Promise<Product> =>
+    await request<Product>(`/api/v1/products/${id}`, jsonRequest('PUT', payload)),
 
-  remove: (id: string) => request<void>(`/api/v1/products/${id}`, { method: 'DELETE' }),
+  removeProduct: async (id: string): Promise<void> =>
+    await request<void>(`/api/v1/products/${id}`, { method: 'DELETE' }),
 }

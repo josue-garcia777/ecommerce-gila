@@ -1,8 +1,9 @@
-import { FormEvent, useState } from 'react'
+import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { Message } from '../components/Message'
 import { isTerminalImportStatus, useProductImport } from '../hooks/useProductImport'
 
-export default function ImportPage() {
+const ImportPage = () => {
   const [file, setFile] = useState<File | null>(null)
   const productImport = useProductImport()
 
@@ -97,3 +98,5 @@ export default function ImportPage() {
     </section>
   )
 }
+
+export default ImportPage

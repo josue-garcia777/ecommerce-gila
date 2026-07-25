@@ -15,8 +15,8 @@ export class ApiError extends Error {
   }
 }
 
-export async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init)
+export const request = async <T>(url: string, init?: RequestInit, abort? : AbortSignal): Promise<T> => {
+  const response = await fetch(url, {...init, ...(abort ? {abort} : {}) })
   if (!response.ok) {
     let problem: ProblemDetail = {}
     try {
@@ -36,7 +36,7 @@ export async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>
 }
 
-export function jsonRequest(method: string, body?: unknown): RequestInit {
+export const jsonRequest = (method: string, body?: unknown): RequestInit => {
   return {
     method,
     headers: { 'Content-Type': 'application/json' },
@@ -44,7 +44,7 @@ export function jsonRequest(method: string, body?: unknown): RequestInit {
   }
 }
 
-export function errorMessage(error: unknown): string {
+export const errorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
     return `${error.title}: ${error.message}`
   }

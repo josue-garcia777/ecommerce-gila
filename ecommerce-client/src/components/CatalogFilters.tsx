@@ -10,7 +10,7 @@ type CatalogFiltersProps = {
   className?: string
 }
 
-export function CatalogFilters({
+export const CatalogFilters = ({
   query,
   category,
   categories,
@@ -18,7 +18,7 @@ export function CatalogFilters({
   onCategoryChange,
   onSubmit,
   className = '',
-}: CatalogFiltersProps) {
+}: CatalogFiltersProps) => {
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     onSubmit()

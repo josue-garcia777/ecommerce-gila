@@ -8,7 +8,7 @@ const navigationClassName = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-[#e9eee4] text-moss-dark' : '',
   ].join(' ')
 
-export function Nav() {
+export const Nav = () => {
   const { itemCount } = useCart()
 
   return (

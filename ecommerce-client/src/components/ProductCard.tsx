@@ -7,7 +7,7 @@ type ProductCardProps = {
   onAdd: (productId: string) => void
 }
 
-export function ProductCard({ product, adding, onAdd }: ProductCardProps) {
+export const ProductCard = ({ product, adding, onAdd }: ProductCardProps) => {
   return (
     <article className="flex min-h-[410px] flex-col overflow-hidden rounded-[18px] border border-line bg-paper transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-card">
       <div className="relative grid h-[175px] place-items-center overflow-hidden bg-[linear-gradient(135deg,#dfe9d8,#f1eedc)]">

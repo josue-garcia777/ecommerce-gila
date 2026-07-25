@@ -4,20 +4,20 @@ import { CatalogFilters } from '../components/CatalogFilters'
 import { Message } from '../components/Message'
 import { ProductCard } from '../components/ProductCard'
 import { useCart } from '../context/CartContext'
-import { useProductCatalog } from '../hooks/useProductCatalog'
+import { useProductList } from '../hooks/useProductCatalog'
 
-export default function StorefrontPage() {
+const HomePage = () => {
   const { addItem } = useCart()
-  const catalog = useProductCatalog()
+  const catalog = useProductList()
   const [adding, setAdding] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [addedNote, setAddedNote] = useState<string | null>(null)
 
   const add = async (productId: string) => {
     try {
       setAdding(productId)
-      setNotice(null)
+      setAddedNote(null)
       await addItem(productId)
-      setNotice('Added to cart')
+      setAddedNote('Added to cart')
     } catch (caught) {
       catalog.setError(errorMessage(caught))
     } finally {
@@ -27,9 +27,9 @@ export default function StorefrontPage() {
 
   return (
     <section className="mx-[clamp(20px,5vw,72px)] my-14 max-[500px]:mx-3.5">
-      {notice && (
-        <button className="toast" onClick={() => setNotice(null)} aria-label="Dismiss notification">
-          {notice}
+      {addedNote && (
+        <button className="toast" onClick={() => setAddedNote(null)} aria-label="Dismiss notification">
+          {addedNote}
         </button>
       )}
       <div className="mb-7 flex items-end justify-between gap-8 max-[1050px]:flex-col max-[1050px]:items-start">
@@ -85,3 +85,5 @@ export default function StorefrontPage() {
     </section>
   )
 }
+
+export default HomePage

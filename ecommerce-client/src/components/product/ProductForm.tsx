@@ -29,7 +29,7 @@ const emptyForm: FormValues = {
   imageUrl: '',
 }
 
-export function ProductForm({
+export const ProductForm = ({
   product,
   onCancel,
   onSaved,
@@ -37,7 +37,7 @@ export function ProductForm({
   product: Product | null
   onCancel: () => void
   onSaved: (message: string) => Promise<void>
-}) {
+}) => {
   const [values, setValues] = useState<FormValues>(
     product
       ? {
@@ -64,6 +64,7 @@ export function ProductForm({
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
+    
     const payload: ProductPayload = {
       ...(product ? {} : { sku: values.sku }),
       name: values.name,
@@ -75,20 +76,21 @@ export function ProductForm({
       imageUrl: values.imageUrl.trim() || null,
       ...(product ? { version: product.version } : {}),
     }
+
     try {
-      setSaving(true)
-      setError(null)
-      if (product) {
-        await productService.update(product.id, payload)
-        await onSaved(`${values.name} was updated`)
-      } else {
-        await productService.create(payload)
-        await onSaved(`${values.name} was created`)
-      }
+        setSaving(true)
+        setError(null)
+        if (product) {
+          await productService.updateProduct(product.id, payload)
+          await onSaved(`${values.name} was updated`)
+        } else {
+          await productService.createProduct(payload)
+          await onSaved(`${values.name} was created`)
+        }
     } catch (caught) {
-      setError(errorMessage(caught))
+        setError(errorMessage(caught))
     } finally {
-      setSaving(false)
+        setSaving(false)
     }
   }
 

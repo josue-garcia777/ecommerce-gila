@@ -1,224 +1,211 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import useSWR, { useSWRConfig } from 'swr'
-import useSWRMutation from 'swr/mutation'
-import { swrKeys } from '../config/swrKeys'
 import { cartService } from '../services/cartService'
-import { ApiError } from '../services/httpClient'
-import type { Cart, Order, OrderSummary } from '../types'
+import { ApiError, errorMessage } from '../services/httpClient'
+import type { Cart, Order } from '../types'
 
-const cartStorageKey = 'gila-commerce-cart-id'
-const checkoutStorageKey = (cartId: string) => `checkout-idempotency:${cartId}`
-const resetCheckout = (cartId: string) => sessionStorage.removeItem(checkoutStorageKey(cartId))
+const cartStorageKey = 'e-commerce-cart-id'
+
+const checkoutStorageKey = (cartId: string): string => `checkout-idempotency:${cartId}`
+
+const removeCheckoutFromStorage = (cartId: string): void => {
+  sessionStorage.removeItem(checkoutStorageKey(cartId))
+}
+
+const isNotFound = (error: unknown): boolean => error instanceof ApiError && error.status === 404
 
 type CartContextValue = {
   cart: Cart | null
   itemCount: number
   isLoading: boolean
-  ensureCart: () => Promise<Cart>
+  restoreError: string | null
   addItem: (productId: string) => Promise<Cart>
   setQuantity: (productId: string, quantity: number) => Promise<Cart>
   removeItem: (productId: string) => Promise<Cart>
   checkout: () => Promise<Order>
 }
 
+type CartUpdate = (cart: Cart) => Promise<Cart>
+
 const CartContext = createContext<CartContextValue | null>(null)
 
-const isNotFound = (error: unknown) => error instanceof ApiError && error.status === 404
+const loadOrCreateActiveCart = async (): Promise<Cart> => {
+  const storedCartId = localStorage.getItem(cartStorageKey)
 
-async function restoreActiveCart() {
-  const storedId = localStorage.getItem(cartStorageKey)
-  if (storedId) {
-    try {
-      const storedCart = await cartService.get(storedId)
-      if (storedCart.status === 'ACTIVE') return storedCart
-    } catch (error) {
-      if (!isNotFound(error)) throw error
-    }
-    localStorage.removeItem(cartStorageKey)
+  if (!storedCartId) {
+    return await cartService.createOrGetCart()
   }
-  return cartService.createOrGet()
+
+  try {
+    const storedCart = await cartService.getCart(storedCartId)
+
+    if (storedCart.status === 'ACTIVE') {
+      return storedCart
+    }
+  } catch (error) {
+    if (!isNotFound(error)) {
+      console.error('Unknow error happened loading the Cart', error);
+      throw error
+    }
+  }
+
+  localStorage.removeItem(cartStorageKey)
+
+  return await cartService.createOrGetCart()
 }
 
-export function CartProvider({ children }: { children: ReactNode }) {
-  const [cartId, setCartId] = useState<string | null>(null)
-  const cartRef = useRef<Cart | null>(null)
-  const restoreRequestRef = useRef<Promise<Cart> | null>(null)
-  const { mutate: mutateCache } = useSWRConfig()
+export const useCart = (): CartContextValue => {
+  const context = useContext(CartContext)
 
-  const cartRequest = useSWR(cartId ? swrKeys.cart(cartId) : null, () => cartService.get(cartId!), {
-    revalidateOnMount: false,
-  })
-  const { trigger: restoreCart, error: restoreError } = useSWRMutation(
-    swrKeys.activeCart,
-    restoreActiveCart,
-  )
-  const cart = cartRequest.data ?? null
+  if (!context) {
+    throw new Error('useCart must be used within CartProvider')
+  }
 
-  useEffect(() => {
-    cartRef.current = cart
-  }, [cart])
+  return context
+}
 
-  const rememberCart = useCallback(
-    async (nextCart: Cart) => {
-      cartRef.current = nextCart
-      localStorage.setItem(cartStorageKey, nextCart.id)
-      await mutateCache(swrKeys.cart(nextCart.id), nextCart, { revalidate: false })
-      setCartId(nextCart.id)
-      return nextCart
-    },
-    [mutateCache],
-  )
+export const CartProvider = ({ children }: { children: ReactNode }) => {
+  const [cart, setCart] = useState<Cart | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const forgetCart = useCallback(
-    async (discardedCartId?: string) => {
-      const id = discardedCartId ?? cartRef.current?.id ?? cartId
-      cartRef.current = null
-      localStorage.removeItem(cartStorageKey)
-      setCartId(null)
-      if (id) {
-        resetCheckout(id)
-        await mutateCache(swrKeys.cart(id), undefined, { revalidate: false })
-      }
-    },
-    [cartId, mutateCache],
-  )
+  const loadCartFromLocalStorage = (nextCart: Cart): Cart => {
+    localStorage.setItem(cartStorageKey, nextCart.id)
+    setCart(nextCart)
 
-  const ensureCart = useCallback((): Promise<Cart> => {
-    if (cartRef.current?.status === 'ACTIVE') {
-      return Promise.resolve(cartRef.current)
+    return nextCart
+  }
+
+  const removeCartFromLocalStorage = (discardedCartId?: string): void => {
+    const cartId = discardedCartId ?? cart?.id
+
+    localStorage.removeItem(cartStorageKey)
+    setCart(null)
+
+    if (cartId) {
+      removeCheckoutFromStorage(cartId)
     }
-    if (restoreRequestRef.current) {
-      return restoreRequestRef.current
+  }
+
+  const restoreCart = async (): Promise<Cart> => {
+    setIsLoading(true)
+
+    try {
+      const activeCart = await loadOrCreateActiveCart()
+      setError(null)
+      return loadCartFromLocalStorage(activeCart)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const returnValidCart = async (): Promise<Cart> => {
+    if (cart?.status === 'ACTIVE') {
+      return cart
     }
 
-    const request = restoreCart().then(rememberCart)
-    restoreRequestRef.current = request
-    const clearRequest = () => {
-      if (restoreRequestRef.current === request) restoreRequestRef.current = null
+    return await restoreCart()
+  }
+
+  const retrieveCart = async (staleCartId: string): Promise<Cart> => {
+    removeCartFromLocalStorage(staleCartId)
+
+    return await restoreCart()
+  }
+
+  const updateActiveCart = async (update: CartUpdate): Promise<Cart> => {
+    let activeCart = await returnValidCart()
+
+    try {
+      const updatedCart = await update(activeCart)
+      return loadCartFromLocalStorage(updatedCart)
+    } catch (error) {
+      if (!isNotFound(error)) {
+        throw error
+      }
+
+      activeCart = await retrieveCart(activeCart.id)
+
+      const updatedCart = await update(activeCart)
+      return loadCartFromLocalStorage(updatedCart)
+    } finally {
+      removeCheckoutFromStorage(activeCart.id)
     }
-    void request.then(clearRequest, clearRequest)
-    return request
-  }, [rememberCart, restoreCart])
+  }
 
-  useEffect(() => {
-    void ensureCart().catch(() => undefined)
-  }, [ensureCart])
+  const addItem = async (productId: string): Promise<Cart> => {
+    return await updateActiveCart(async (activeCart) => {
+      const currentQuantity =
+        activeCart.items.find((item) => item.productId === productId)?.quantity ?? 0
 
-  useEffect(() => {
-    const cartIsMissing = isNotFound(cartRequest.error)
-    const cartIsInactive = cart !== null && cart.status !== 'ACTIVE'
-    if (!cartId || (!cartIsMissing && !cartIsInactive)) return
-    void forgetCart(cartId)
-      .then(ensureCart)
-      .catch(() => undefined)
-  }, [cart, cartId, cartRequest.error, ensureCart, forgetCart])
+      return await cartService.setQuantity(activeCart.id, productId, currentQuantity + 1)
+    })
+  }
 
-  const recoverCart = useCallback(
-    async (staleCartId: string) => {
-      await forgetCart(staleCartId)
-      return ensureCart()
-    },
-    [ensureCart, forgetCart],
-  )
+  const setQuantity = async (productId: string, quantity: number): Promise<Cart> => {
+    return await updateActiveCart(async (activeCart) => {
+      return await cartService.setQuantity(activeCart.id, productId, quantity)
+    })
+  }
 
-  const addItem = useCallback(
-    async (productId: string) => {
-      let active = await ensureCart()
-      const update = (current: Cart) => {
-        const quantity = current.items.find((item) => item.productId === productId)?.quantity ?? 0
-        return cartService.setQuantity(current.id, productId, quantity + 1)
+  const removeItem = async (productId: string): Promise<Cart> => {
+    const activeCart = await returnValidCart()
+
+    try {
+      const updatedCart = await cartService.removeItem(activeCart.id, productId)
+      return loadCartFromLocalStorage(updatedCart)
+    } catch (error) {
+      if (!isNotFound(error)) {
+        throw error
       }
-      try {
-        return await update(active).then(rememberCart)
-      } catch (error) {
-        if (!isNotFound(error)) throw error
-        active = await recoverCart(active.id)
-        return update(active).then(rememberCart)
-      } finally {
-        resetCheckout(active.id)
-      }
-    },
-    [ensureCart, recoverCart, rememberCart],
-  )
 
-  const setQuantity = useCallback(
-    async (productId: string, quantity: number) => {
-      let active = await ensureCart()
-      const update = (current: Cart) => cartService.setQuantity(current.id, productId, quantity)
-      try {
-        return await update(active).then(rememberCart)
-      } catch (error) {
-        if (!isNotFound(error)) throw error
-        active = await recoverCart(active.id)
-        return update(active).then(rememberCart)
-      } finally {
-        resetCheckout(active.id)
-      }
-    },
-    [ensureCart, recoverCart, rememberCart],
-  )
+      return await retrieveCart(activeCart.id)
+    } finally {
+      removeCheckoutFromStorage(activeCart.id)
+    }
+  }
 
-  const removeItem = useCallback(
-    async (productId: string) => {
-      const active = await ensureCart()
-      try {
-        return await cartService.removeItem(active.id, productId).then(rememberCart)
-      } catch (error) {
-        if (!isNotFound(error)) throw error
-        return recoverCart(active.id)
-      } finally {
-        resetCheckout(active.id)
-      }
-    },
-    [ensureCart, recoverCart, rememberCart],
-  )
-
-  const checkout = useCallback(async () => {
-    const active = await ensureCart()
-    const storageKey = checkoutStorageKey(active.id)
+  const checkout = async (): Promise<Order> => {
+    const activeCart = await returnValidCart()
+    const storageKey = checkoutStorageKey(activeCart.id)
     const idempotencyKey = sessionStorage.getItem(storageKey) ?? crypto.randomUUID()
-    sessionStorage.setItem(storageKey, idempotencyKey)
-    const order = await cartService.checkout(active.id, idempotencyKey)
-    await mutateCache(swrKeys.order(order.id), order, { revalidate: false })
-    await mutateCache(
-      swrKeys.orders,
-      (currentOrders: OrderSummary[] | undefined) => {
-        const summary: OrderSummary = {
-          id: order.id,
-          cartId: order.cartId,
-          status: order.status,
-          total: order.total,
-          createdAt: order.createdAt,
-        }
-        return [summary, ...(currentOrders?.filter((current) => current.id !== order.id) ?? [])]
-      },
-      { revalidate: false },
-    )
-    sessionStorage.removeItem(storageKey)
-    await forgetCart(active.id)
-    return order
-  }, [ensureCart, forgetCart, mutateCache])
 
-  const value = useMemo<CartContextValue>(
-    () => ({
-      cart,
-      itemCount: cart?.items.reduce((total, item) => total + item.quantity, 0) ?? 0,
-      isLoading: !cart && !restoreError,
-      ensureCart,
-      addItem,
-      setQuantity,
-      removeItem,
-      checkout,
-    }),
-    [addItem, cart, checkout, ensureCart, removeItem, restoreError, setQuantity],
-  )
+    sessionStorage.setItem(storageKey, idempotencyKey)
+
+    const order = await cartService.checkout(activeCart.id, idempotencyKey)
+    removeCartFromLocalStorage(activeCart.id)
+
+    return order
+  }
+
+  useEffect(() => {
+    const initializeCart = async (): Promise<void> => {
+      try {
+        const activeCart = await loadOrCreateActiveCart()
+        setError(null)
+        loadCartFromLocalStorage(activeCart)
+      } catch (error) {
+        setError(errorMessage(error))
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    initializeCart()
+  }, [])
+
+  const itemCount = cart?.items.reduce((total, item) => total + item.quantity, 0) ?? 0
+
+  const value: CartContextValue = {
+    cart,
+    itemCount,
+    isLoading,
+    restoreError: error,
+    addItem,
+    setQuantity,
+    removeItem,
+    checkout,
+  }
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
-}
-
-export function useCart() {
-  const context = useContext(CartContext)
-  if (!context) throw new Error('useCart must be used within CartProvider')
-  return context
 }

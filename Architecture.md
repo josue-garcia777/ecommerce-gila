@@ -244,20 +244,31 @@ ideally you should notify of a product price change, we just handle the case if 
 Cursor Pagination.
     - I have decided to use a simple cursor pagination.
 
+### Front End
+- routes.ts: holds routes for spa
+- services: http service to ecommerce-api
+- hooks: reusable component for product import (submit, polling(2000ms)) and product (Categories, Pagination etc..)
+- pages: Main Pages for spa
+- Cart context: Manage Cart Operations in a context to preserve them(local storage).
+- components: re-usable components for the pages.
+- config: swrConfig for retrieval of data and mutations and keys for caching swr
+
+
+
 # How to Run the project locally
 
 ## Proyect structure
 **ROOT:**
-    - ecommerce-api
+- ecommerce-api
         - Spring boot App:
             - JPA, H2 or Postgress, Hibernate, JAVA 21, Spring boot 4.1.
         - DockerFile
-    - ecommerce-client:
+- ecommerce-client:
         - React + Vite App
             - SWR + React Router Dom
         - DockerFile
 
-    - Compose provisionates for back and front end
+- Compose provisionates for back and front end
         - check on healthy service dependencies
 
 

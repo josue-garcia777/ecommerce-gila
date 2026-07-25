@@ -1,10 +1,12 @@
-export function Message({
+import type { ReactNode } from 'react'
+
+export const Message = ({
   tone = 'info',
   children,
 }: {
   tone?: 'info' | 'error' | 'success'
-  children: React.ReactNode
-}) {
+  children: ReactNode
+}) => {
   return (
     <div className={`message ${tone}`} role={tone === 'error' ? 'alert' : 'status'}>
       {children}

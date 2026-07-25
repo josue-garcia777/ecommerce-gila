@@ -1,19 +1,69 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import useSWR from 'swr'
 import { Message } from '../components/Message'
 import { MoneyText } from '../components/MoneyText'
-import { swrKeys } from '../config/swrKeys'
 import { errorMessage } from '../services/httpClient'
 import { orderService } from '../services/orderService'
+import type { Order, OrderSummary } from '../types'
 
-export default function OrdersPage() {
+const OrdersPage = () => {
   const { orderId } = useParams()
-  const ordersRequest = useSWR(swrKeys.orders, orderService.list)
-  const selectedOrderRequest = useSWR(orderId ? swrKeys.order(orderId) : null, () =>
-    orderService.get(orderId!),
-  )
-  const selected = selectedOrderRequest.data
-  const requestError = ordersRequest.error ?? selectedOrderRequest.error
+  const [orders, setOrders] = useState<OrderSummary[]>([])
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [loadingOrders, setLoadingOrders] = useState(true)
+  const [loadingOrder, setLoadingOrder] = useState(false)
+  const [ordersError, setOrdersError] = useState<string | null>(null)
+  const [orderError, setOrderError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadOrders = async (): Promise<void> => {
+      setLoadingOrders(true)
+
+      try {
+        const loadedOrders = await orderService.getOrders()
+
+        setOrders(loadedOrders)
+        setOrdersError(null)
+        
+      } catch (error) {
+        setOrdersError(errorMessage(error))
+      } finally {
+        setLoadingOrders(false)  
+      }
+    }
+
+    loadOrders()
+  }, [])
+
+  useEffect(() => {
+    if (!orderId) {
+      setSelectedOrder(null)
+      setLoadingOrder(false)
+      setOrderError(null)
+      return
+    }
+
+    const loadOrder = async (): Promise<void> => {
+      setSelectedOrder(null)
+      setLoadingOrder(true)
+
+      try {
+        const loadedOrder = await orderService.getOrder(orderId)
+
+          setSelectedOrder(loadedOrder)
+          setOrderError(null)
+        
+      } catch (error) {
+          setOrderError(errorMessage(error))
+      } finally {
+          setLoadingOrder(false)
+      }
+    }
+
+    loadOrder()
+  }, [orderId])
+
+  const error = ordersError ?? orderError
 
   return (
     <section className="content-section">
@@ -23,9 +73,9 @@ export default function OrdersPage() {
           <h1>Order history</h1>
         </div>
       </div>
-      {requestError && <Message tone="error">{errorMessage(requestError)}</Message>}
-      {ordersRequest.isLoading && <p className="muted">Loading orders…</p>}
-      {!ordersRequest.isLoading && ordersRequest.data?.length === 0 && (
+      {error && <Message tone="error">{error}</Message>}
+      {loadingOrders && <p className="muted">Loading orders…</p>}
+      {!loadingOrders && orders.length === 0 && (
         <div className="empty-state">
           <h3>No orders yet</h3>
           <p>Completed checkouts appear here.</p>
@@ -33,11 +83,11 @@ export default function OrdersPage() {
       )}
       <div className="order-layout">
         <div className="order-list">
-          {ordersRequest.data?.map((order) => (
+          {orders.map((order) => (
             <Link
               key={order.id}
               to={`/orders/${order.id}`}
-              className={selected?.id === order.id ? 'selected' : ''}
+              className={selectedOrder?.id === order.id ? 'selected' : ''}
             >
               <span>
                 <strong>Order {order.id.slice(0, 8)}</strong>
@@ -50,15 +100,15 @@ export default function OrdersPage() {
             </Link>
           ))}
         </div>
-        {selectedOrderRequest.isLoading && <p className="muted">Loading order…</p>}
-        {selected && (
+        {loadingOrder && <p className="muted">Loading order…</p>}
+        {selectedOrder && (
           <article className="order-detail">
             <span className="success-mark">✓</span>
             <p className="eyebrow">Confirmed</p>
-            <h2>Order {selected.id.slice(0, 8)}</h2>
-            <p className="muted">Payment reference {selected.paymentReference}</p>
+            <h2>Order {selectedOrder.id.slice(0, 8)}</h2>
+            <p className="muted">Payment reference {selectedOrder.paymentReference}</p>
             <div className="confirmation-items">
-              {selected.items.map((item) => (
+              {selectedOrder.items.map((item) => (
                 <div key={item.productId}>
                   <span>
                     {item.productName}
@@ -75,7 +125,7 @@ export default function OrdersPage() {
             <div className="confirmation-total">
               <span>Total</span>
               <strong>
-                <MoneyText money={selected.total} />
+                <MoneyText money={selectedOrder.total} />
               </strong>
             </div>
           </article>
@@ -84,3 +134,5 @@ export default function OrdersPage() {
     </section>
   )
 }
+
+export default OrdersPage
