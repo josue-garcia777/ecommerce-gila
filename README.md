@@ -50,3 +50,7 @@ npm run dev
 ```
 
 Open the client at [http://localhost:5173](http://localhost:5173). Vite forwards API requests to the local API at [http://localhost:8080](http://localhost:8080).
+
+## Sample CSV
+
+The provided `Code Challenge E-Commerce.csv` file was downloaded on **2026-07-21**.

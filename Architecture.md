@@ -237,7 +237,7 @@ Reusing the same Idempotency-Key returns existing order
 
 
 Carts has no expiration, so if a user has old price, check out might show different results on screen
-ideally you should notify of a product price change, we just handle the case if it is out of stock.
+ideally you should notify of a product price change, we just handle the case if it is out of stock. for simple demo, I think it might not be necessary.
 
 
 
@@ -246,7 +246,7 @@ ideally you should notify of a product price change, we just handle the case if 
     - this scans every row on the DB at scale. Text Search index or a dedicated DB like Elastic
 
 Cursor Pagination.
-    - I have decided to use a simple cursor pagination.
+    - I have decided to use a simple cursor pagination to avoid loading all product at once.
 
 ### Front End
 - routes.ts: holds routes for spa
@@ -255,7 +255,7 @@ Cursor Pagination.
 - pages: Main Pages for spa
 - Cart context: Manage Cart Operations in a context to preserve them(local storage).
 - components: re-usable components for the pages.
-- config: swrConfig for retrieval of data and mutations and keys for caching swr
+
 
 
 
@@ -269,7 +269,7 @@ Cursor Pagination.
         - DockerFile
 - ecommerce-client:
         - React + Vite App
-            - SWR + React Router Dom
+            - React Router Dom + React Context
         - DockerFile
 
 - Compose provisionates for back and front end
