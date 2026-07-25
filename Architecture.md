@@ -314,6 +314,10 @@ Cursor Pagination.
 ```
 docker compose up --build
 
+wipe it down
+
+dockers compose down
+
 ```
 
 
@@ -321,7 +325,12 @@ docker compose up --build
 too run with postgress
 
 ```
-docker compose -f compose.yaml -f compose.postgres.yaml up --build
+docker compose -f compose.yaml -f compose.postgres.yaml up --build --force-recreate
+
+wipe it down
+docker compose -f compose.yaml -f compose.postgres.yaml down --volumes --remove-orphans
+
+
 ```
 
 ## Open client or swagger
