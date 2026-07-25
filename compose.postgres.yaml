@@ -22,6 +22,9 @@ services:
       DB_USERNAME: ${POSTGRES_USER:-ecommerce}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-ecommerce}
       SERVER_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:-xs4FPEf0qOu/5XLNZz/TdsN/sYUsOTgitDKJ6PKM1PM=} ##NOTE: just for demo
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-josue@gmail.com} 
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-123456789}
     depends_on:
       postgres:
         condition: service_healthy
